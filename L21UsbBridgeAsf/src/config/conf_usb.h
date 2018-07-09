@@ -46,7 +46,7 @@
 
 //! Device definition (mandatory)
 #define  USB_DEVICE_VENDOR_ID             USB_VID_ATMEL
-#define  USB_DEVICE_PRODUCT_ID            USB_PID_ATMEL_ASF_MSC_HIDS_CDC
+#define  USB_DEVICE_PRODUCT_ID            USB_PID_ATMEL_U5030_IDPRODUCT
 #define  USB_DEVICE_MAJOR_VERSION         1
 #define  USB_DEVICE_MINOR_VERSION         0
 #define  USB_DEVICE_POWER                 100 // Consumption on Vbus line (mA)
@@ -60,6 +60,7 @@
 #define  USB_DEVICE_MANUFACTURE_NAME      "ATMEL ASF"
 #define  USB_DEVICE_PRODUCT_NAME          "HID Mouse, keyboard, CDC and MSC"
 #define  USB_DEVICE_SERIAL_NAME           "123123123123" // Disk SN for MSC
+#define  USB_CONFIG_STR_DESC_NAME		  "Atmel QRG-I/F"
 
 /**
  * Device speeds support
@@ -103,17 +104,20 @@
 #define  USB_DEVICE_EP_CTRL_SIZE       64
 
 //! Two interfaces for this device (CDC + MSC + HID mouse + HID keyboard)
-#define  USB_DEVICE_NB_INTERFACE       5
+#define  USB_DEVICE_NB_INTERFACE       6
 
 //! 7 endpoints used by HID mouse, HID keyboard, CDC and MSC interfaces
 //! but an IN and OUT endpoints can be defined with the same number on XMEGA, thus 5
 // (7 | USB_EP_DIR_IN)  // CDC Notify endpoint
 // (6 | USB_EP_DIR_IN)  // CDC TX
-// (5 | USB_EP_DIR_OUT) // CDC RX
+// (6 | USB_EP_DIR_OUT) // CDC RX
 // (1 | USB_EP_DIR_IN)  // MSC IN
-// (2 | USB_EP_DIR_OUT) // MSC OUT
+// (1 | USB_EP_DIR_OUT) // MSC OUT
 // (3 | USB_EP_DIR_IN)  // HID mouse report
 // (4 | USB_EP_DIR_IN)  // HID keyboard report
+// (5 | USB_EP_DIR_IN)  // HID Generic report
+// (5 | USB_EP_DIR_OUT)  // HID Generic report
+
 #define  USB_DEVICE_MAX_EP             7
 #  if SAM3XA && defined(USB_DEVICE_HS_SUPPORT)
 // In HS mode, size of bulk endpoints are 512
@@ -160,7 +164,7 @@
 #define  UDI_CDC_DEFAULT_DATABITS         8
 
 //! Enable id string of interface to add an extra USB string
-#define  UDI_CDC_IAD_STRING_ID            4
+#define  UDI_CDC_IAD_STRING_ID            5
 
 /**
  * USB CDC low level configuration
@@ -171,7 +175,7 @@
 //! Endpoint numbers definition
 #define  UDI_CDC_COMM_EP_0             (7 | USB_EP_DIR_IN)  // Notify endpoint
 #define  UDI_CDC_DATA_EP_IN_0          (6 | USB_EP_DIR_IN)  // TX
-#define  UDI_CDC_DATA_EP_OUT_0         (5 | USB_EP_DIR_OUT) // RX
+#define  UDI_CDC_DATA_EP_OUT_0         (6 | USB_EP_DIR_OUT) // RX
 
 //! Interface numbers
 #define  UDI_CDC_COMM_IFACE_NUMBER_0   0
@@ -195,7 +199,7 @@
 #define  UDI_MSC_DISABLE_EXT()         main_msc_disable()
 
 //! Enable id string of interface to add an extra USB string
-#define  UDI_MSC_STRING_ID                5
+#define  UDI_MSC_STRING_ID                6
 
 /**
  * USB MSC low level configuration
@@ -205,7 +209,7 @@
  */
 //! Endpoint numbers definition
 #define  UDI_MSC_EP_IN                 (1 | USB_EP_DIR_IN)
-#define  UDI_MSC_EP_OUT                (2 | USB_EP_DIR_OUT)
+#define  UDI_MSC_EP_OUT                (1 | USB_EP_DIR_OUT)
 
 //! Interface number
 #define  UDI_MSC_IFACE_NUMBER          2
@@ -222,7 +226,7 @@
 #define  UDI_HID_MOUSE_DISABLE_EXT()      main_mouse_disable()
 
 //! Enable id string of interface to add an extra USB string
-#define  UDI_HID_MOUSE_STRING_ID          6
+#define  UDI_HID_MOUSE_STRING_ID          7
 
 /**
  * USB HID Mouse low level configuration
@@ -248,7 +252,7 @@
 #define  UDI_HID_KBD_CHANGE_LED(value)  ui_kbd_led(value)
 
 //! Enable id string of interface to add an extra USB string
-#define  UDI_HID_KBD_STRING_ID            7
+#define  UDI_HID_KBD_STRING_ID            8
 
 /**
  * USB HID Keyboard low level configuration
@@ -264,6 +268,44 @@
 //@}
 //@}
 
+/**
+ * Configuration of HID GENERIC interface
+ * @{
+ */
+//! Interface callback definition
+#define  UDI_HID_GENERIC_ENABLE_EXT()        main_generic_enable()
+#define  UDI_HID_GENERIC_DISABLE_EXT()       main_generic_disable()
+#define  UDI_HID_GENERIC_REPORT_OUT(ptr)     main_generic_reportout(ptr)
+#define  UDI_HID_GENERIC_SET_FEATURE(report) main_hid_set_feature(report)
+#define  UDI_HID_GENERIC_SOF() 				 main_generic_sof()
+
+//! Sizes of I/O reports
+#define  UDI_HID_REPORT_IN_SIZE             64
+#define  UDI_HID_REPORT_OUT_SIZE            64
+#define  UDI_HID_REPORT_FEATURE_SIZE        3
+
+//! Sizes of I/O endpoints
+#define  UDI_HID_GENERIC_EP_SIZE            64
+
+//@}
+
+//! Enable id string of interface to add an extra USB string
+#define  UDI_HID_GENERIC_STRING_ID            9
+
+/**
+ * USB HID u5030 low level configuration
+ * In standalone these configurations are defined by the HID u5030 module.
+ * For composite device, these configuration must be defined here
+ * @{
+ */
+//! Endpoint numbers definition
+#define  UDI_HID_GENERIC_EP_IN           (5 | USB_EP_DIR_IN)
+#define  UDI_HID_GENERIC_EP_OUT           (5 | USB_EP_DIR_OUT)
+
+//! Interface number
+#define  UDI_HID_GENERIC_IFACE_NUMBER    5
+//@}
+//@}
 //@}
 
 
@@ -278,7 +320,8 @@
 	udi_cdc_data_desc_t  udi_cdc_data; \
 	udi_msc_desc_t       udi_msc; \
 	udi_hid_mouse_desc_t udi_hid_mouse; \
-	udi_hid_kbd_desc_t   udi_hid_kbd
+	udi_hid_kbd_desc_t   udi_hid_kbd; \
+	udi_hid_generic_desc_t   udi_hid_generic;
 
 //! USB Interfaces descriptor value for Full Speed
 #define UDI_COMPOSITE_DESC_FS \
@@ -287,7 +330,8 @@
 	.udi_cdc_data  = UDI_CDC_DATA_DESC_0_FS, \
 	.udi_msc       = UDI_MSC_DESC_FS, \
 	.udi_hid_mouse = UDI_HID_MOUSE_DESC, \
-	.udi_hid_kbd   = UDI_HID_KBD_DESC
+	.udi_hid_kbd   = UDI_HID_KBD_DESC, \
+	.udi_hid_generic = UDI_HID_GENERIC_DESC, \
 
 //! USB Interfaces descriptor value for High Speed
 #define UDI_COMPOSITE_DESC_HS \
@@ -296,7 +340,8 @@
 	.udi_cdc_data  = UDI_CDC_DATA_DESC_0_HS, \
 	.udi_msc       = UDI_MSC_DESC_HS, \
 	.udi_hid_mouse = UDI_HID_MOUSE_DESC, \
-	.udi_hid_kbd   = UDI_HID_KBD_DESC
+	.udi_hid_kbd   = UDI_HID_KBD_DESC, \
+	.udi_hid_generic = UDI_HID_GENERIC_DESC, \
 
 //! USB Interface APIs
 #define	UDI_COMPOSITE_API \
@@ -304,7 +349,9 @@
 	&udi_api_cdc_data, \
 	&udi_api_msc, \
 	&udi_api_hid_mouse, \
-	&udi_api_hid_kbd
+	&udi_api_hid_kbd, \
+	&udi_api_hid_generic, \
+
 //@}
 
 
@@ -319,6 +366,7 @@
 #include "udi_msc.h"
 #include "udi_hid_mouse.h"
 #include "udi_hid_kbd.h"
+#include "udi_hid_generic.h"
 #include "uart.h"
 #include "main.h"
 #include "ui.h"

@@ -75,6 +75,29 @@ bool main_keyboard_enable(void);
  */
 void main_keyboard_disable(void);
 
+/*! \brief Called by HID interface
+ * Callback running when USB Host enable generic interface
+ *
+ * \retval true if generic startup is ok
+ */
+bool main_generic_enable(void);
+
+/*! \brief Called by HID interface
+ * Callback running when USB Host disable generic interface
+ */
+void main_generic_disable(void);
+
+/*! \brief Called when a start of frame is received on USB line
+ */
+
+/*! \brief Called by UDI HID generic when USB Host send a feature request
+ */
+void main_hid_set_feature(uint8_t* report);
+
+void main_generic_reportout(uint8_t *ptr);
+
+void main_generic_sof(void);
+
 /*! \brief Called by CDC interface
  * Callback running when USB Host enable CDC interface
  *

@@ -112,8 +112,10 @@ typedef enum status_code status_code_genare_t;
 /**
   Status codes used by MAC stack.
  */
+
 enum status_code_wireless {
 	//STATUS_OK               =  0, //!< Success
+/*
 	ERR_IO_ERROR            =  -1, //!< I/O error
 	ERR_FLUSHED             =  -2, //!< Request flushed from queue
 	ERR_TIMEOUT             =  -3, //!< Operation timed out
@@ -128,7 +130,7 @@ enum status_code_wireless {
 	ERR_NO_TIMER            =  -12, //!< No timer available
 	ERR_TIMER_ALREADY_RUNNING   =  -13, //!< Timer already running
 	ERR_TIMER_NOT_RUNNING   =  -14, //!< Timer not running
-
+*/
 	/**
 	 * \brief Operation in progress
 	 *

@@ -138,6 +138,18 @@ static uint8_t udc_string_product_name[] = USB_DEVICE_PRODUCT_NAME;
 #endif
 
 /**
+ * \brief USB configure name storage
+ * String is allocated only if USB_CONFIG_STR_DESC_NAME is declared
+ * by usb application configuration
+ */
+#ifdef USB_CONFIG_STR_DESC_NAME
+static uint8_t udc_string_configure_desc_name[] = USB_CONFIG_STR_DESC_NAME;
+#  define USB_CONFIG_STR_DESC_NAME_SIZE  (sizeof(udc_string_configure_desc_name)-1)
+#else
+#  define USB_DEVICE_PRODUCT_NAME_SIZE  0
+#endif
+
+/**
  * \brief USB device string descriptor
  * Structure used to transfer ASCII strings to USB String descriptor structure.
  */
@@ -628,6 +640,12 @@ static bool udc_req_std_dev_get_str_desc(void)
 	case 3:
 		str_length = USB_DEVICE_SERIAL_NAME_SIZE;
 		str = udc_get_string_serial_name();
+		break;
+#endif
+#if defined USB_CONFIG_STR_DESC_NAME
+	case 4:
+		str_length = USB_CONFIG_STR_DESC_NAME_SIZE;
+		str = udc_string_configure_desc_name;
 		break;
 #endif
 	default:

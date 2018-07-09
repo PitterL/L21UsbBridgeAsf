@@ -103,4 +103,6 @@ void ui_process(uint16_t framenumber);
  */
 void ui_kbd_led(uint8_t value);
 
+void ui_led_change(uint8_t *report);
+
 #endif // _UI_H_
