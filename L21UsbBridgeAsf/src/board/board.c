@@ -10,13 +10,34 @@
 #include "board.h"
 #include "external/err_codes.h"
 
+int32_t set_default_iic_pads(void *hw, struct i2c_master_config *const cfg)
+{
+	uint32_t pad0, pad1;
+
+	switch((uint32_t)hw){
+	case (uint32_t)SERCOM0:
+		pad0 = PINMUX_PA04D_SERCOM0_PAD0;
+		pad1 = PINMUX_PA07D_SERCOM0_PAD3;
+		break;
+	case (uint32_t)SERCOM1:
+	default:
+		pad0 = PINMUX_PA16C_SERCOM1_PAD0;
+		pad1 = PINMUX_PA17C_SERCOM1_PAD1;
+		break;
+	}
+
+	cfg->pinmux_pad0 = pad0;
+	cfg->pinmux_pad1 = pad1;
+
+	return ERR_NONE;
+}
+
 int32_t iic_bus_init(iic_controller_t *ihc, void *hw, uint8_t baudrate, uint8_t addr)
 {
 	i2c_master_get_config_defaults(&ihc->config);
+	set_default_iic_pads(hw, &ihc->config);
 	i2c_master_init(&ihc->module, hw, &ihc->config);
 	ihc->addr = addr;
-	
-    ihc->hw = hw;
 
     return ERR_NONE;
 }

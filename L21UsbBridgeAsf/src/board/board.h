@@ -14,7 +14,6 @@ typedef struct{
 	struct i2c_master_module module;
 	struct i2c_master_config config;
 	uint8_t addr;
-	void *hw;
 }iic_controller_t;
 
 int32_t iic_bus_init(iic_controller_t *ihc, void *hw, uint8_t baudrate, uint8_t addr);
