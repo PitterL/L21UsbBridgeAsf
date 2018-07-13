@@ -704,6 +704,8 @@
     <Folder Include="src\ASF\common\services\usb\class\" />
     <Folder Include="src\ASF\common\services\usb\class\cdc\" />
     <Folder Include="src\ASF\common\services\usb\class\cdc\device\" />
+    <Folder Include="src\ASF\common\services\usb\class\cdc\device\example\" />
+    <Folder Include="src\ASF\common\services\usb\class\cdc\device\example\saml21j18b_saml21_xplained_pro\" />
     <Folder Include="src\ASF\common\services\usb\class\composite\" />
     <Folder Include="src\ASF\common\services\usb\class\composite\device\" />
     <Folder Include="src\ASF\common\services\usb\class\composite\device\example2\" />
@@ -713,8 +715,6 @@
     <Folder Include="src\ASF\common\services\usb\class\hid\device\generic\" />
     <Folder Include="src\ASF\common\services\usb\class\hid\device\generic\example\" />
     <Folder Include="src\ASF\common\services\usb\class\hid\device\generic\example\saml21j18b_saml21_xplained_pro\" />
-    <Folder Include="src\ASF\common\services\usb\class\hid\device\kbd\" />
-    <Folder Include="src\ASF\common\services\usb\class\hid\device\mouse\" />
     <Folder Include="src\ASF\common\services\usb\class\msc\" />
     <Folder Include="src\ASF\common\services\usb\class\msc\device\" />
     <Folder Include="src\ASF\common\services\usb\udc\" />
@@ -791,6 +791,12 @@
     <Compile Include="src\app\u5030_protocol.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\ASF\common\services\usb\class\cdc\device\example\saml21j18b_saml21_xplained_pro\ui.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\ASF\common\services\usb\class\hid\device\generic\example\saml21j18b_saml21_xplained_pro\ui.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\ASF\common\services\usb\class\hid\device\generic\udi_hid_generic.c">
       <SubType>compile</SubType>
     </Compile>
@@ -833,9 +839,6 @@
     <None Include="src\asf.h">
       <SubType>compile</SubType>
     </None>
-    <Compile Include="src\ASF\common\services\usb\class\composite\device\example2\saml21j18b_saml21_xplained_pro\ui.c">
-      <SubType>compile</SubType>
-    </Compile>
     <None Include="src\config\conf_sleepmgr.h">
       <SubType>compile</SubType>
     </None>
@@ -1289,9 +1292,6 @@
     <None Include="src\ASF\sam0\utils\cmsis\saml21\include_b\instance\tal.h">
       <SubType>compile</SubType>
     </None>
-    <None Include="src\ASF\common\services\usb\class\hid\device\kbd\udi_hid_kbd.h">
-      <SubType>compile</SubType>
-    </None>
     <None Include="src\ASF\sam0\utils\cmsis\saml21\include_b\instance\sercom3.h">
       <SubType>compile</SubType>
     </None>
@@ -1331,9 +1331,6 @@
     <None Include="src\ASF\sam0\utils\cmsis\saml21\include_b\instance\evsys.h">
       <SubType>compile</SubType>
     </None>
-    <None Include="src\ASF\common\services\usb\class\hid\device\mouse\udi_hid_mouse.h">
-      <SubType>compile</SubType>
-    </None>
     <None Include="src\ASF\sam0\drivers\port\quick_start\qs_port_basic.h">
       <SubType>compile</SubType>
     </None>
@@ -1370,16 +1367,7 @@
     <Compile Include="src\ASF\common\services\usb\class\composite\device\udi_composite_desc.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\ASF\common\services\usb\class\hid\device\kbd\udi_hid_kbd.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\ASF\common\services\usb\class\hid\device\mouse\udi_hid_mouse.c">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="src\ASF\common\services\usb\class\hid\device\udi_hid.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\ASF\common\services\usb\class\msc\device\udi_msc.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ASF\common\services\usb\udc\udc.c">

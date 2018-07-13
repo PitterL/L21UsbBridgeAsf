@@ -75,9 +75,11 @@ int main(void)
 	while (true) {
 
 		if (main_b_msc_enable) {
+			#ifdef USB_COMPOSITE_DEVICE_MSC_EN
 			if (!udi_msc_process_trans()) {
 				sleepmgr_enter_sleep();
 			}
+			#endif
 		}else{
 			sleepmgr_enter_sleep();
 		}
@@ -121,19 +123,34 @@ void main_remotewakeup_disable(void)
  *
  * return true, if the string ID requested is know and managed by this functions
  */
+
 bool main_extra_string(void)
 {
+	#define USB_COMPOSITE_DEVICE_MAX_EXTRA_STRING_SIZE 32 
+	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
 	static uint8_t udi_cdc_name[] = "CDC interface";
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
 	static uint8_t udi_msc_name[] = "MSC interface";
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 	static uint8_t udi_hid_mouse_name[] = "HID mouse interface";
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_KBD
 	static uint8_t udi_hid_kbd_name[] = "HID keyboard interface";
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
 	static uint8_t udi_hid_generic_name[] = "Atmel QRG-I/F";
+	#endif
 
 	struct extra_strings_desc_t{
 		usb_str_desc_t header;
+		le16_t string[USB_COMPOSITE_DEVICE_MAX_EXTRA_STRING_SIZE];
+		/*
 		le16_t string[Max(Max(Max( \
 			sizeof(udi_cdc_name)-1, sizeof(udi_msc_name)-1),\
 			sizeof(udi_hid_mouse_name)-1), sizeof(udi_hid_kbd_name)-1)];
+		*/
 	};
 	static UDC_DESC_STORAGE struct extra_strings_desc_t extra_strings_desc = {
 		.header.bDescriptorType = USB_DT_STRING
@@ -145,25 +162,35 @@ bool main_extra_string(void)
 
 	// Link payload pointer to the string corresponding at request
 	switch (udd_g_ctrlreq.req.wValue & 0xff) {
+	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
 	case UDI_CDC_IAD_STRING_ID:
 		str_lgt = sizeof(udi_cdc_name)-1;
 		str = udi_cdc_name;
 		break;
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
 	case UDI_MSC_STRING_ID:
 		str_lgt = sizeof(udi_msc_name)-1;
 		str = udi_msc_name;
 		break;
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 	case UDI_HID_MOUSE_STRING_ID:
 		str_lgt = sizeof(udi_hid_mouse_name)-1;
 		str = udi_hid_mouse_name;
 		break;
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_KBD
 	case UDI_HID_KBD_STRING_ID:
 		str_lgt = sizeof(udi_hid_kbd_name)-1;
 		str = udi_hid_kbd_name;
 		break;
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
 	case UDI_HID_GENERIC_STRING_ID:
 		str_lgt = sizeof(udi_hid_generic_name) -1;
 		str = udi_hid_generic_name;
+	#endif
 	default:
 		return false;
 	}

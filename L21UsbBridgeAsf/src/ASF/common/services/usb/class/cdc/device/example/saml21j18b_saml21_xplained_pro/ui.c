@@ -1,7 +1,7 @@
 /**
  * \file
  *
- * \brief Different macros.
+ * \brief User Interface
  *
  * Copyright (c) 2014-2018 Microchip Technology Inc. and its subsidiaries.
  *
@@ -30,54 +30,67 @@
  * \asf_license_stop
  *
  */
-
-#ifndef UTILS_H_INCLUDED
-#define UTILS_H_INCLUDED
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * \addtogroup doc_driver_hal_utils_macro
- *
- * @{
+/*
+ * Support and FAQ: visit <a href="https://www.microchip.com/support/">Microchip Support</a>
  */
 
-/**
- * \brief Retrieve pointer to parent structure
- */
-#define CONTAINER_OF(ptr, type, field_name) ((type *)(((uint8_t *)ptr) - offsetof(type, field_name)))
+#include <asf.h>
+#include "ui.h"
 
-/**
- * \brief Retrieve array size
- */
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
-
-/**
- * \brief Emit the compiler pragma \a arg.
- *
- * \param[in] arg  The pragma directive as it would appear after \e \#pragma
- *             (i.e. not stringified).
- */
-#define COMPILER_PRAGMA(arg) _Pragma(#arg)
-
-/**
- * \def COMPILER_PACK_SET(alignment)
- * \brief Set maximum alignment for subsequent struct and union definitions to \a alignment.
- */
-#define COMPILER_PACK_SET(alignment) COMPILER_PRAGMA(pack(alignment))
-
-/**
- * \def COMPILER_PACK_RESET()
- * \brief Set default alignment for subsequent struct and union definitions.
- */
-#define COMPILER_PACK_RESET() COMPILER_PRAGMA(pack())
-
-
-/**@}*/
-
-#ifdef __cplusplus
+void ui_com_open(uint8_t port)
+{
+	UNUSED(port);
 }
-#endif
-#endif /* UTILS_H_INCLUDED */
+
+
+void ui_com_close(uint8_t port)
+{
+	UNUSED(port);
+}
+
+
+void ui_com_rx_start(void)
+{
+
+}
+
+
+void ui_com_rx_stop(void)
+{
+
+}
+
+
+void ui_com_tx_start(void)
+{
+
+}
+
+
+void ui_com_tx_stop(void)
+{
+
+}
+
+
+void ui_com_error(void)
+{
+
+}
+
+
+void ui_com_overflow(void)
+{
+
+}
+
+/**
+ * \defgroup UI User Interface
+ *
+ * Human interface on SAML21-XPlain:
+ * - LED0 blinks when USB host has checked and enabled HID Keyboard, mouse, CDC and MSC interface
+ * - When firstly press SW0 down, application will open a notepad application on Windows O.S.
+ *   and sends key sequence "Atmel ARM"
+ * - After first press SW0, Push button 0 (SW0) are used to move mouse up.
+ * - Only SW0 down will generate a wakeup to USB Host in remote wakeup mode.
+ */
