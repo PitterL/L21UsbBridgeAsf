@@ -667,7 +667,7 @@ union config_data11{
 			0: OK
 			1: Failed
 	Repeat Response:
-		DATA0: 0x9A
+		DATA0: CMD_AUTO_REPEAT_RESP
 		DATA1:
 			0: Transfer OK
 			1: IIC NAK to write
@@ -682,7 +682,7 @@ union config_data11{
 struct config_repeat{
 	union {
 		struct {
-			uint8_t  delay: 2;
+			uint8_t  delay: 3;
 			uint8_t chg: 3;
 			uint8_t bus: 2;
 		}bits;
@@ -704,6 +704,24 @@ struct config_repeat{
 #define REPEAT_CHG_BY_GPIO1_H 4
 #define REPEAT_CHG_BY_LED2_L 5
 #define REPEAT_CHG_BY_LED2_H 6
+
+
+#define CMD_AUTO_REPEAT_RESP 0x9A
+/*
+	<CMD_AUTO_REPEAT_RESP>
+		autonomously carry out communications over IIC, SPI or UART
+		and return data to the host after each exchange.
+	Command: NA(Auto run after CMD_REPEAT set)
+	Repeat Response:
+		DATA0: CMD_AUTO_REPEAT_RESP
+		DATA1:
+			0: Transfer OK
+			1: IIC NAK to write
+			2: IIC NAK to address
+			3: SPI/UART Timeout
+			4: Wrtiting finished, without read operation 
+		DATA2-63: received data content	
+*/
 
 #define CMD_REPEAT_STACK 0x98
 /*
@@ -1294,8 +1312,15 @@ struct cmd_func_map{
 	cmd_func func;
 };
 
-#define GPIO_P_0 GP_RST
+#ifdef BOARD_BRIDGE_D21
+#define GPIO_P_0 GP_TP2
 #define GPIO_P_1 GP_CHG
+#define GPIO_P_LED2 GP_IO0
+#else
+#define GPIO_P_0 USB_ID	//Button on L21 board
+#define GPIO_P_1 GP_CHG
+#define GPIO_P_LED2 GP_IO0
+#endif
 
 int32_t u5030_process_data(const uint8_t *data, uint32_t count);
 int32_t u5030_get_response(void **buf_ptr, uint32_t *buf_ptr_size);

@@ -499,7 +499,7 @@
       <Value>DEBUG</Value>
       <Value>__SAML21J18B__</Value>
       <Value>VIRTUAL_MEMORY_ENABLE</Value>
-      <Value>BOARD=SAML21_XPLAINED_PRO</Value>
+      <Value>BOARD1=SAML21_XPLAINED_PRO</Value>
       <Value>UDD_ENABLE</Value>
       <Value>EXTINT_CALLBACK_MODE=true</Value>
       <Value>ARM_MATH_CM0PLUS=true</Value>
@@ -507,6 +507,7 @@
       <Value>USB_DEVICE_LPM_SUPPORT</Value>
       <Value>ACCESS_USB_ENABLED</Value>
       <Value>I2C_MASTER_CALLBACK_MODE=true</Value>
+      <Value>BOARD=USER_BOARD</Value>
     </ListValues>
   </armgcc.compiler.symbols.DefSymbols>
   <armgcc.compiler.directories.IncludePaths>
@@ -791,10 +792,10 @@
     <Compile Include="src\app\u5030_protocol.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\ASF\common\services\usb\class\cdc\device\example\saml21j18b_saml21_xplained_pro\ui.c">
+    <Compile Include="src\ASF\common\boards\user_board.h">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="src\ASF\common\services\usb\class\hid\device\generic\example\saml21j18b_saml21_xplained_pro\ui.c">
+    <Compile Include="src\ASF\common\services\usb\class\cdc\device\example\saml21j18b_saml21_xplained_pro\ui.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ASF\common\services\usb\class\hid\device\generic\udi_hid_generic.c">
@@ -810,12 +811,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ASF\sam0\drivers\sercom\i2c\i2c_sam0\i2c_master_interrupt.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\board\board.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\board\board.h">
       <SubType>compile</SubType>
     </Compile>
     <None Include="src\ASF\sam0\drivers\sercom\i2c\quick_start_master_dma\qs_i2c_master_dma.h">
@@ -1437,6 +1432,27 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ASF\sam0\utils\syscalls\gcc\syscalls.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\board\board.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\board\board.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\board\board_gpio.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\board\board_gpio.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\board\board_i2c.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\board\board_i2c.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\board\ui.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\main.c">

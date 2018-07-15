@@ -1,24 +1,17 @@
 /*
  * board.h
  *
- * Created: 7/3/2018 9:56:17 AM
+ * Created: 7/15/2018 2:15:17 PM
  *  Author: A41450
  */ 
 
 
 #ifndef PLATFORM_BOARD_H_
 #define PLATFORM_BOARD_H_
-#include <i2c_master.h>
 
-typedef struct{
-	struct i2c_master_module module;
-	struct i2c_master_config config;
-	uint8_t addr;
-}iic_controller_t;
+#include "board_i2c.h"
+#include "board_gpio.h"
 
-int32_t iic_bus_init(iic_controller_t *ihc, void *hw, uint8_t baudrate, uint8_t addr);
-int32_t iic_bus_deinit(iic_controller_t *ihc);
-int32_t iic_write(iic_controller_t *ihc, const uint8_t *const buf, const uint16_t length);
-int32_t iic_read(iic_controller_t *ihc, uint8_t *const buf, const uint16_t length);
+void platform_board_init(void);
 
-#endif /* BOARD_H_ */
+#endif

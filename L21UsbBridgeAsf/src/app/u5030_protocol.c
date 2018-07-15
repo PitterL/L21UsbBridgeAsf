@@ -34,6 +34,7 @@ typedef struct {
 
 //static config_setting_t g_config_setting;
 static controller_t g_host_controller;
+static uint8_t transfer_data(void *host, const uint8_t *wdata, uint32_t wlen, uint8_t *rdata, uint32_t rlen, uint8_t *ecode, int32_t retry);
 static int32_t enpack_command(uint8_t cmd, uint8_t resp, const uint8_t *data, uint32_t count);
 
 static int32_t set_bridge_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
@@ -98,13 +99,16 @@ static int32_t set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *dat
 			baudrate = 400;
 			break;
     	}
-		iic_bus_init(&hc->iic, SERCOM1, baudrate, scfg->base.data2.bits.iic1_addr);
+		iic_bus_init(&hc->iic, SERCOM4, baudrate, scfg->base.data2.bits.iic1_addr);
 	}
 	
 	//TODO: Inlitialize UART
 	//TODO: Inlitialize SPI
 
 	SET_AND_CLR_BIT(hc->flag, BIT_BUS_INITED, BIT_BUS_REINIT);
+
+	//clear auto repeat
+	CLR_BIT(hc->flag, BIT_AUTO_REPEAT);
 
 	if (dummy)
 		return ERR_NONE;
@@ -118,7 +122,7 @@ static int32_t send_bridge_data(void *host, uint8_t cmd, const uint8_t *data, ui
 	config_setting_t * scfg = &hc->setting;
 	response_cache_t *cache = &hc->rcache;
 	uint32_t lenw;
-	uint32_t lenr;
+	uint32_t lenr, read_size_max;
 	uint8_t cmd_rsp;
 	uint8_t len_rsp;
 	int32_t ret;
@@ -129,8 +133,7 @@ static int32_t send_bridge_data(void *host, uint8_t cmd, const uint8_t *data, ui
 
 	lenw = data[0];
 	lenr = data[1];
-	count -= 2;
-	if (lenw > count)
+	if (lenw + 2 > count)
 		return -ERR_INVALID_DATA;
 
 	//Need initialize bus before transfer data
@@ -140,45 +143,18 @@ static int32_t send_bridge_data(void *host, uint8_t cmd, const uint8_t *data, ui
 			return ret;
 	}
 
-	do {
-		cmd_rsp = IIC_DATA_OK;
-		len_rsp = 0;
-		ret = ERR_NONE;
-		
-		//write
-		if (lenw) {
-			ret = iic_write(&hc->iic, data + 2, lenw);
-			if (ret == ERR_BAD_ADDRESS) {
-				cmd_rsp = IIC_DATA_NAK_ADDR;
-			}else if(ret) {
-				cmd_rsp = IIC_DATA_NAK_WRITE;
-			}
-		}
-
-		//read
-		if (ret == ERR_NONE) {
-			if (lenr) {
-				ret = iic_read(&hc->iic, cache->data + 2, lenr);
-				if (ret == ERR_BAD_ADDRESS) {
-					cmd_rsp = IIC_DATA_NAK_ADDR;
-				}else if(ret) {
-					cmd_rsp = IIC_DATA_NAK_READ;
-				}else {
-					len_rsp = lenr;
-				}
-			}else {
-				cmd_rsp = IIC_DATA_FINISHED_WITHOUT_R;
-			}
-		}
-
-		if (ret == ERR_NONE)
-			break;
-		retry--;
-
-	}while(ret != ERR_NONE && retry > 0);
-
-	cache->data[1] = len_rsp;
-	return enpack_command(cmd, cmd_rsp, NULL, len_rsp + 1);
+	read_size_max = sizeof(cache->data) - 2;
+	if (lenr > read_size_max)
+		lenr = read_size_max;	//count may max than buffer size
+	len_rsp = transfer_data(host, data + 2, lenw, cache->data + 2, lenr, &cmd_rsp, retry);
+	if (cmd == CMD_AUTO_REPEAT_RESP) {
+		cache->data[0] = cmd;
+		cache->data[1] = cmd_rsp;
+	}else {
+		cache->data[0] = cmd_rsp;
+		cache->data[1] = len_rsp;
+	}
+	return enpack_command(cmd, 0, NULL, len_rsp + 1);
 }
 
 static int32_t set_bridge_auto_repeat(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
@@ -258,12 +234,63 @@ static struct cmd_func_map command_func_map_list[] = {
 	{CMD_EXTENSION_CONFIG, set_bridge_ext_config},
 }; 
 
+static uint8_t transfer_data(void *host, const uint8_t *wdata, uint32_t wlen, uint8_t *rdata, uint32_t rlen, uint8_t *ecode, int32_t retry)
+{
+	controller_t *hc = (controller_t *)host;
+	uint8_t cmd_rsp;
+	uint8_t len_rsp;
+	int32_t ret;
+	
+	do {
+		cmd_rsp = IIC_DATA_OK;
+		len_rsp = 0;
+		ret = ERR_NONE;
+		
+		//write
+		if (wlen) {
+			ret = iic_write(&hc->iic, wdata, wlen);
+			if (ret == ERR_BAD_ADDRESS) {
+				cmd_rsp = IIC_DATA_NAK_ADDR;
+			}else if(ret) {
+				cmd_rsp = IIC_DATA_NAK_WRITE;
+			}
+		}
+
+		//read
+		if (ret == ERR_NONE) {
+			if (rlen) {
+				ret = iic_read(&hc->iic, rdata, rlen);
+				if (ret == ERR_BAD_ADDRESS) {
+					cmd_rsp = IIC_DATA_NAK_ADDR;
+				}else if(ret) {
+					cmd_rsp = IIC_DATA_NAK_READ;
+				}else {
+					len_rsp = rlen;
+				}
+			}else {
+				cmd_rsp = IIC_DATA_FINISHED_WITHOUT_R;
+			}
+		}
+
+		if (ret == ERR_NONE)
+			break;
+		retry--;
+		//TBD: here need a retry delay
+
+	}while(ret != ERR_NONE && retry > 0);
+
+	if (ecode)
+		*ecode = cmd_rsp;
+
+	return len_rsp;
+}
+
 static int32_t enpack_command(uint8_t cmd, uint8_t resp, const uint8_t *data, uint32_t count)
 {
 	controller_t *hc = &g_host_controller;
 	response_cache_t *cache = &hc->rcache;
 	uint8_t *buf = cache->data;
-	uint32_t buf_size = ARRAY_SIZE(cache->data);
+	uint32_t buf_size = sizeof(cache->data);
 
 	if (cache->cmd != CMD_NONE) {
 		return -ERR_BUSY; 
@@ -273,11 +300,12 @@ static int32_t enpack_command(uint8_t cmd, uint8_t resp, const uint8_t *data, ui
 		return -ERR_NO_MEMORY;
 	
 	cache->cmd = cmd;
-	buf[0] = resp;
+	if (data != NULL)   //If data is Null, that means resp has been filled
+		buf[0] = resp;
 	buf_size--;
 	buf++;
 
-	if (data != NULL)	//If data is Null, that mean data already be copied
+	if (data != NULL)	//If data is Null, that means data already be copied
 		memcpy(buf, data, count);
 	
 	buf_size -= count;
@@ -291,7 +319,8 @@ static int32_t enpack_command(uint8_t cmd, uint8_t resp, const uint8_t *data, ui
 
 static void enpack_command_nak(uint8_t cmd)
 {
-	enpack_command(cmd, CMD_NAK, NULL, 0);
+	uint8_t dummy = 0;
+	enpack_command(cmd, CMD_NAK, &dummy, 1);
 }
 
 static int32_t parse_command(const uint8_t *data, uint32_t count)
@@ -334,8 +363,10 @@ int32_t u5030_get_response(void **buf_ptr, uint32_t *buf_ptr_size)
 
 	controller_t *hc = &g_host_controller;
 	response_cache_t *cache = &hc->rcache;
-/*
+
 	config_setting_t * scfg = &hc->setting;
+	const uint8_t *data;
+	uint32_t count;
 	int32_t pin = 0;
 	bool chkv;
 
@@ -362,10 +393,12 @@ int32_t u5030_get_response(void **buf_ptr, uint32_t *buf_ptr_size)
 				chkv = true;
 				break;
 			case REPEAT_CHG_BY_LED2_L:
-				//TODO
+				pin = GPIO_P_LED2;
+				chkv = false;
 				break;
 			case REPEAT_CHG_BY_LED2_H:
-				//TODO
+				pin = GPIO_P_LED2;
+				chkv = true;
 				break;
 			}
 
@@ -374,7 +407,9 @@ int32_t u5030_get_response(void **buf_ptr, uint32_t *buf_ptr_size)
 					if (scfg->dym.repeat.cfg.bits.bus == REPEAT_BUS_SPI_UART) {
 						;//TODO
 					}else if (scfg->dym.repeat.cfg.bits.bus == REPEAT_BUS_IIC1){
-						send_bridge_data(hc, CMD_IIC_DATA_1, (uint8_t *)&scfg->dym.repeat, sizeof(scfg->dym.repeat));
+						data = (uint8_t *)&scfg->dym.repeat.lenw;
+						count = scfg->dym.repeat.lenw + 2;
+						send_bridge_data(hc, CMD_AUTO_REPEAT_RESP, data, count);
 					}else if (scfg->dym.repeat.cfg.bits.bus == REPEAT_BUS_IIC2){
 						//TODO
 					}
@@ -382,7 +417,7 @@ int32_t u5030_get_response(void **buf_ptr, uint32_t *buf_ptr_size)
 			}
 		}
 	}
-*/
+
 	if (cache->cmd) {
 		if(buf_ptr)
 			*buf_ptr = cache->data;
@@ -441,8 +476,9 @@ int32_t u5030_init(void)
 {
 	controller_t *hc = &g_host_controller;
 
+	platform_board_init();
 	load_default_config(&hc->setting);
-	
+
 	return ERR_NONE;
 }
 
