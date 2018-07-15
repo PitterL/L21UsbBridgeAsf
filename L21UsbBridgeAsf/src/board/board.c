@@ -14,10 +14,15 @@ int32_t set_default_iic_pads(void *hw, struct i2c_master_config *const cfg)
 {
 	uint32_t pad0, pad1;
 
+	//PAD0: SDA; PAD1: SCL
 	switch((uint32_t)hw){
 	case (uint32_t)SERCOM0:
 		pad0 = PINMUX_PA04D_SERCOM0_PAD0;
 		pad1 = PINMUX_PA07D_SERCOM0_PAD3;
+		break;
+	case (uint32_t)SERCOM4:
+		pad0    = PINMUX_PA12D_SERCOM4_PAD0;
+		pad1    = PINMUX_PA13D_SERCOM4_PAD1;
 		break;
 	case (uint32_t)SERCOM1:
 	default:
@@ -37,6 +42,7 @@ int32_t iic_bus_init(iic_controller_t *ihc, void *hw, uint8_t baudrate, uint8_t 
 	i2c_master_get_config_defaults(&ihc->config);
 	set_default_iic_pads(hw, &ihc->config);
 	i2c_master_init(&ihc->module, hw, &ihc->config);
+	i2c_master_enable(&ihc->module);
 	ihc->addr = addr;
 
     return ERR_NONE;

@@ -61,21 +61,9 @@ UDC_DESC_STORAGE usb_dev_desc_t udc_device_desc = {
 	.idProduct                 = LE16(USB_DEVICE_PRODUCT_ID),
 	.bcdDevice                 = LE16((USB_DEVICE_MAJOR_VERSION << 8)
 		| USB_DEVICE_MINOR_VERSION),
-#ifdef USB_DEVICE_MANUFACTURE_NAME
-	.iManufacturer             = 1,
-#else
-	.iManufacturer             = 0,  // No manufacture string
-#endif
-#ifdef USB_DEVICE_PRODUCT_NAME
-	.iProduct                  = 2,
-#else
-	.iProduct                  = 0,  // No product string
-#endif
-#if (defined USB_DEVICE_SERIAL_NAME || defined USB_DEVICE_GET_SERIAL_NAME_POINTER)
-	.iSerialNumber             = 3,
-#else
-	.iSerialNumber             = 0,  // No serial string
-#endif
+	.iManufacturer             = USB_DEVICE_MANUFACTURE_STRING_ID,
+	.iProduct                  = 0 /*USB_DEVICE_PRODUCT_STRING_ID*/,
+	.iSerialNumber             = USB_DEVICE_SERIAL_STRING_ID,
 	.bNumConfigurations        = 1
 };
 
@@ -128,7 +116,7 @@ UDC_DESC_STORAGE udc_desc_t udc_desc_fs = {
 	.conf.wTotalLength         = LE16(sizeof(udc_desc_t)),
 	.conf.bNumInterfaces       = USB_DEVICE_NB_INTERFACE,
 	.conf.bConfigurationValue  = 1,
-	.conf.iConfiguration       = 4,
+	.conf.iConfiguration       = 0 /*USB_CONFIG_STR_DESC_STRING_ID*/,
 	.conf.bmAttributes         = USB_CONFIG_ATTR_MUST_SET | USB_DEVICE_ATTR,
 	.conf.bMaxPower            = USB_CONFIG_MAX_POWER(USB_DEVICE_POWER),
 	//UDI_COMPOSITE_DESC_FS
@@ -160,7 +148,7 @@ UDC_DESC_STORAGE udc_desc_t udc_desc_hs = {
 	.conf.wTotalLength         = LE16(sizeof(udc_desc_t)),
 	.conf.bNumInterfaces       = USB_DEVICE_NB_INTERFACE,
 	.conf.bConfigurationValue  = 1,
-	.conf.iConfiguration       = 0,
+	.conf.iConfiguration       = 0 /*USB_CONFIG_STR_DESC_STRING_ID*/,
 	.conf.bmAttributes         = USB_CONFIG_ATTR_MUST_SET | USB_DEVICE_ATTR,
 	.conf.bMaxPower            = USB_CONFIG_MAX_POWER(USB_DEVICE_POWER),
 	//UDI_COMPOSITE_DESC_HS

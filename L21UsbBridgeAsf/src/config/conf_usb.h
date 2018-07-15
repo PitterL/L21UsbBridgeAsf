@@ -57,10 +57,16 @@
 // (USB_CONFIG_ATTR_BUS_POWERED)
 
 //! USB Device string definitions (Optional)
-#define  USB_DEVICE_MANUFACTURE_NAME      "ATMEL ASF"
-#define  USB_DEVICE_PRODUCT_NAME          "HID Mouse, keyboard, CDC and MSC"
-#define  USB_DEVICE_SERIAL_NAME           "123123123123" // Disk SN for MSC
-#define  USB_CONFIG_STR_DESC_NAME		  "Atmel QRG-I/F"
+#define USB_COMPOSITE_DEVICE_MAX_STRING_SIZE 32 
+
+#define  USB_DEVICE_MANUFACTURE_STRING_ID	  1
+#define  USB_DEVICE_MANUFACTURE_NAME      "ATMEL"
+#define  USB_DEVICE_PRODUCT_STRING_ID        2
+#define  USB_DEVICE_PRODUCT_NAME          "" //"HID Mouse, keyboard, CDC and MSC"
+#define  USB_DEVICE_SERIAL_STRING_ID		  3          
+#define  USB_DEVICE_SERIAL_NAME           "2018-07-13" // Disk SN for MSC
+#define  USB_CONFIG_STR_DESC_STRING_ID		  4          
+#define  USB_CONFIG_STR_DESC_NAME		  ""
 
 /**
  * Device speeds support
@@ -171,7 +177,7 @@
 #define  UDI_CDC_DEFAULT_DATABITS         8
 
 //! Enable id string of interface to add an extra USB string
-#define  UDI_CDC_IAD_STRING_ID            5
+#define  UDI_CDC_IAD_STRING_ID            (USB_CONFIG_STR_DESC_STRING_ID + 1)
 
 /**
  * USB CDC low level configuration
@@ -190,6 +196,7 @@
 #define USB_COMPOSITE_DEVICE_UDI_CDC_IFACE_NUM_END (UDI_CDC_DATA_IFACE_NUMBER_0 + 1)
 //@}
 #else
+#define  UDI_CDC_IAD_STRING_ID            (USB_CONFIG_STR_DESC_STRING_ID)
 #define USB_COMPOSITE_DEVICE_UDI_CDC_IFACE_NUM_END USB_COMPOSITE_DEVICE_INTERFACE_START
 #endif	//USB_COMPOSITE_DEVICE_UDI_CDC
 //@}
@@ -211,7 +218,7 @@
 #define  UDI_MSC_DISABLE_EXT()         main_msc_disable()
 
 //! Enable id string of interface to add an extra USB string
-#define  UDI_MSC_STRING_ID                6
+#define  UDI_MSC_STRING_ID                (UDI_CDC_IAD_STRING_ID + 1)
 
 /**
  * USB MSC low level configuration
@@ -228,6 +235,7 @@
 #define  USB_COMPOSITE_DEVICE_MSC_IFACE_NUM_END (UDI_MSC_IFACE_NUMBER + 1)
 //@}
 #else
+#define  UDI_MSC_STRING_ID                (UDI_CDC_IAD_STRING_ID)
 #define USB_COMPOSITE_DEVICE_MSC_IFACE_NUM_END USB_COMPOSITE_DEVICE_UDI_CDC_IFACE_NUM_END
 #endif //USB_COMPOSITE_DEVICE_MSC
 //@}
@@ -243,7 +251,7 @@
 #define  UDI_HID_MOUSE_DISABLE_EXT()      main_mouse_disable()
 
 //! Enable id string of interface to add an extra USB string
-#define  UDI_HID_MOUSE_STRING_ID          7
+#define  UDI_HID_MOUSE_STRING_ID          (UDI_MSC_STRING_ID + 1)
 
 /**
  * USB HID Mouse low level configuration
@@ -259,6 +267,7 @@
 #define  USB_COMPOSITE_DEVICE_HID_MOUSE_IFACE_NUM_END (UDI_HID_MOUSE_IFACE_NUMBER + 1)
 //@}
 #else
+#define  UDI_HID_MOUSE_STRING_ID          (UDI_MSC_STRING_ID)
 #define USB_COMPOSITE_DEVICE_HID_MOUSE_IFACE_NUM_END USB_COMPOSITE_DEVICE_UDI_CDC_IFACE_NUM_END
 //@}
 #endif //USB_COMPOSITE_DEVICE_HID_MOUSE
@@ -275,7 +284,7 @@
 #define  UDI_HID_KBD_CHANGE_LED(value)  ui_kbd_led(value)
 
 //! Enable id string of interface to add an extra USB string
-#define  UDI_HID_KBD_STRING_ID            8
+#define  UDI_HID_KBD_STRING_ID            (UDI_HID_MOUSE_STRING_ID + 1)
 
 /**
  * USB HID Keyboard low level configuration
@@ -291,6 +300,7 @@
 #define  USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END (UDI_HID_KBD_IFACE_NUMBER + 1)
 //@}
 #else
+#define  UDI_HID_KBD_STRING_ID            (UDI_HID_MOUSE_STRING_ID)
 #define USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END USB_COMPOSITE_DEVICE_HID_MOUSE_IFACE_NUM_END
 //@}
 //@}
@@ -320,7 +330,7 @@
 //@}
 
 //! Enable id string of interface to add an extra USB string
-#define  UDI_HID_GENERIC_STRING_ID            9
+#define  UDI_HID_GENERIC_STRING_ID            (UDI_HID_KBD_STRING_ID + 1)
 
 /**
  * USB HID u5030 low level configuration
@@ -338,6 +348,7 @@
 #define  USB_COMPOSITE_DEVICE_HID_GENERIC_NUM_END (UDI_HID_GENERIC_IFACE_NUMBER + 1)
 //@}
 #else
+#define  UDI_HID_GENERIC_STRING_ID            (UDI_HID_KBD_STRING_ID)
 #define USB_COMPOSITE_DEVICE_HID_GENERIC_NUM_END USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END
 //@}
 //@}

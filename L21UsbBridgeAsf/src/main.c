@@ -35,6 +35,7 @@
  */
 
 #include <asf.h>
+#include <string.h>
 #include "conf_usb.h"
 #include "ui.h"
 #include "uart.h"
@@ -126,7 +127,6 @@ void main_remotewakeup_disable(void)
 
 bool main_extra_string(void)
 {
-	#define USB_COMPOSITE_DEVICE_MAX_EXTRA_STRING_SIZE 32 
 	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
 	static uint8_t udi_cdc_name[] = "CDC interface";
 	#endif
@@ -140,12 +140,12 @@ bool main_extra_string(void)
 	static uint8_t udi_hid_kbd_name[] = "HID keyboard interface";
 	#endif
 	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
-	static uint8_t udi_hid_generic_name[] = "Atmel QRG-I/F";
+	static uint8_t udi_hid_generic_name[] = "QRG-I/F";
 	#endif
 
 	struct extra_strings_desc_t{
 		usb_str_desc_t header;
-		le16_t string[USB_COMPOSITE_DEVICE_MAX_EXTRA_STRING_SIZE];
+		le16_t string[USB_COMPOSITE_DEVICE_MAX_STRING_SIZE];
 		/*
 		le16_t string[Max(Max(Max( \
 			sizeof(udi_cdc_name)-1, sizeof(udi_msc_name)-1),\
@@ -164,37 +164,39 @@ bool main_extra_string(void)
 	switch (udd_g_ctrlreq.req.wValue & 0xff) {
 	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
 	case UDI_CDC_IAD_STRING_ID:
-		str_lgt = sizeof(udi_cdc_name)-1;
+		//str_lgt = sizeof(udi_cdc_name)-1;
 		str = udi_cdc_name;
 		break;
 	#endif
 	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
 	case UDI_MSC_STRING_ID:
-		str_lgt = sizeof(udi_msc_name)-1;
+		//str_lgt = sizeof(udi_msc_name)-1;
 		str = udi_msc_name;
 		break;
 	#endif
 	#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 	case UDI_HID_MOUSE_STRING_ID:
-		str_lgt = sizeof(udi_hid_mouse_name)-1;
+		//str_lgt = sizeof(udi_hid_mouse_name)-1;
 		str = udi_hid_mouse_name;
 		break;
 	#endif
 	#ifdef USB_COMPOSITE_DEVICE_HID_KBD
 	case UDI_HID_KBD_STRING_ID:
-		str_lgt = sizeof(udi_hid_kbd_name)-1;
+		//str_lgt = sizeof(udi_hid_kbd_name)-1;
 		str = udi_hid_kbd_name;
 		break;
 	#endif
 	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
 	case UDI_HID_GENERIC_STRING_ID:
-		str_lgt = sizeof(udi_hid_generic_name) -1;
+		//str_lgt = sizeof(udi_hid_generic_name) -1;
 		str = udi_hid_generic_name;
+		break;
 	#endif
 	default:
 		return false;
 	}
 
+	str_lgt = Min(strlen((const char *)str), USB_COMPOSITE_DEVICE_MAX_STRING_SIZE);
 	if (str_lgt!=0) {
 		for( i=0; i<str_lgt; i++) {
 			extra_strings_desc.string[i] = cpu_to_le16((le16_t)str[i]);

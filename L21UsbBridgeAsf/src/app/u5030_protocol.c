@@ -34,21 +34,25 @@ typedef struct {
 
 //static config_setting_t g_config_setting;
 static controller_t g_host_controller;
-static int32_t enpack_command(uint8_t cmd, uint8_t resp, const uint8_t *buf, uint32_t size);
+static int32_t enpack_command(uint8_t cmd, uint8_t resp, const uint8_t *data, uint32_t count);
 
 static int32_t set_bridge_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
 {
 	controller_t *hc = (controller_t *)host;
 	config_setting_t *scfg = &hc->setting;
-	uint32_t cfg_size = sizeof(scfg->base);
+	uint32_t cfg_size;
 
-	if (cfg_size > count)
-		return -ERR_INVALID_DATA;
+	cfg_size = Min(sizeof(scfg->base), count);
 
-	memcpy(&scfg->base, data, cfg_size);
+	if (cfg_size){
+		memcpy(&scfg->base, data, cfg_size);
 	
-	if (TEST_BIT(hc->flag, BIT_BUS_INITED))
-		SET_BIT(hc->flag, BIT_BUS_REINIT);
+		if (TEST_BIT(hc->flag, BIT_BUS_INITED))
+			SET_BIT(hc->flag, BIT_BUS_REINIT);
+	}
+	
+	//TBD: Bulk mode test command
+	//{ 0x80, 0x30, 0xCA, 0x00, 0x80, 0x00, 0x00, 0xC8, 0x40, 0x54, 0x00, 0x00, 0xAA, 0x55, 0xAA, 0xFF };
 
 	return enpack_command(cmd, cmd, data, cfg_size);
 }
@@ -174,7 +178,7 @@ static int32_t send_bridge_data(void *host, uint8_t cmd, const uint8_t *data, ui
 	}while(ret != ERR_NONE && retry > 0);
 
 	cache->data[1] = len_rsp;
-	return enpack_command(cmd, cmd_rsp, cache->data, 0);
+	return enpack_command(cmd, cmd_rsp, NULL, len_rsp + 1);
 }
 
 static int32_t set_bridge_auto_repeat(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
@@ -199,6 +203,18 @@ static int32_t set_bridge_auto_repeat(void *host, uint8_t cmd, const uint8_t *da
 
 	return enpack_command(cmd, cmd, &resp, 1);
 }
+
+static int32_t test_bridge_cmd(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
+{
+	uint8_t resp[7];
+
+	//TBD: Bulk mode (Version > 5)
+
+	memset(resp, 0, sizeof(resp));
+	return enpack_command(cmd, cmd, resp, sizeof(resp));
+}
+
+//0x24, 0x25, 0x26, 0x27, 0x34, 0x35, 0x4A, 0x4B, 0x4C, 0x5A, 0x5B, 0x5F
 
 static struct cmd_func_map command_func_map_list[] = {
 	//Base command
@@ -227,7 +243,7 @@ static struct cmd_func_map command_func_map_list[] = {
 	{CMD_STOP_LISTENING, NULL},
 	{CMD_SEND_DEBUG_DATA, NULL},
 	{CMD_NO_DATA, NULL},
-	{CMD_NULL, NULL},
+	{CMD_NULL, test_bridge_cmd},
 	{CMD_START_TEST, NULL},
 	{CMD_RESET_BRIDGE, NULL},
 	{CMD_JUMP_BOOTLOADER, NULL},
@@ -242,28 +258,33 @@ static struct cmd_func_map command_func_map_list[] = {
 	{CMD_EXTENSION_CONFIG, set_bridge_ext_config},
 }; 
 
-static int32_t enpack_command(uint8_t cmd, uint8_t resp, const uint8_t *buf, uint32_t size)
+static int32_t enpack_command(uint8_t cmd, uint8_t resp, const uint8_t *data, uint32_t count)
 {
 	controller_t *hc = &g_host_controller;
 	response_cache_t *cache = &hc->rcache;
+	uint8_t *buf = cache->data;
+	uint32_t buf_size = ARRAY_SIZE(cache->data);
 
-	if (cmd == CMD_NONE)
-		return -ERR_NOT_FOUND;
-
-	if (cache->cmd) {
-		return -ERR_BUSY;//FIXME: last package not be handled there should be something wrong 
+	if (cache->cmd != CMD_NONE) {
+		return -ERR_BUSY; 
 	}
 
-	if (size + 1 > sizeof(cache->data))
+	if (count + 1 > buf_size)
 		return -ERR_NO_MEMORY;
-		
+	
 	cache->cmd = cmd;
-	if (buf != NULL) {
-		cache->data[0] = resp;
-		if (size)
-			memcpy(cache->data + 1, buf, size);
-	}else
-		memset(cache->data, 0, sizeof(cache->data));
+	buf[0] = resp;
+	buf_size--;
+	buf++;
+
+	if (data != NULL)	//If data is Null, that mean data already be copied
+		memcpy(buf, data, count);
+	
+	buf_size -= count;
+	buf += count;
+	
+	if (buf_size)
+		memset(buf, 0, buf_size);
 
 	return ERR_NONE;
 }
@@ -380,7 +401,7 @@ int32_t u5030_clear_cache(void)
 	controller_t *hc = &g_host_controller;
 	response_cache_t *cache = &hc->rcache;
 		
-	cache->cmd = 0;
+	cache->cmd = CMD_NONE;
 	cache->data[0] = 0;
 	
 	return ERR_NONE;

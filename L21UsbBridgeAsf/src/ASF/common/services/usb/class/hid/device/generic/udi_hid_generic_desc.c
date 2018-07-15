@@ -40,7 +40,6 @@
 #include "udc_desc.h"
 #include "udi_hid.h"
 #include "udi_hid_generic.h"
-
 /**
  * \ingroup udi_hid_generic_group
  * \defgroup udi_hid_generic_group_single_desc USB device descriptors for a single interface
@@ -74,17 +73,17 @@ UDC_DESC_STORAGE usb_dev_desc_t udc_device_desc = {
 	.bcdDevice                 = LE16((USB_DEVICE_MAJOR_VERSION << 8)
 		| USB_DEVICE_MINOR_VERSION),
 #ifdef USB_DEVICE_MANUFACTURE_NAME
-	.iManufacturer = 1,
+	.iManufacturer = _STRING_ID,
 #else
 	.iManufacturer = 0,	// No manufacture string
 #endif
 #ifdef USB_DEVICE_PRODUCT_NAME
-	.iProduct = 2,
+	.iProduct = USB_DEVICE_MANUFACTURE_STRING_ID,
 #else
 	.iProduct = 0,	// No product string
 #endif
 #if (defined USB_DEVICE_SERIAL_NAME || defined USB_DEVICE_GET_SERIAL_NAME_POINTER)
-	.iSerialNumber = 3,
+	.iSerialNumber = USB_DEVICE_SERIAL_STRING_ID,
 #else
 	.iSerialNumber = 0,	// No serial string
 #endif
