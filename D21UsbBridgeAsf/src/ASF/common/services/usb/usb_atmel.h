@@ -176,6 +176,6 @@
 //! @}
 
 //! @}
-
+#define  USB_PID_ATMEL_U5030_IDPRODUCT               0x6123
 
 #endif // _USB_ATMEL_H_

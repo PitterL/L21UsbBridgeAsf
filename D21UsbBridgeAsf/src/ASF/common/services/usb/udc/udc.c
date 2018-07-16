@@ -35,6 +35,7 @@
  */
 
 #include "conf_usb.h"
+#include <string.h>
 #include "usb_protocol.h"
 #include "udd.h"
 #include "udc_desc.h"
@@ -90,25 +91,14 @@ static UDC_DESC_STORAGE usb_str_lgid_desc_t udc_string_desc_languageid = {
  * String is allocated only if USB_DEVICE_MANUFACTURE_NAME is declared
  * by usb application configuration
  */
-#ifdef USB_DEVICE_MANUFACTURE_NAME
 static uint8_t udc_string_manufacturer_name[] = USB_DEVICE_MANUFACTURE_NAME;
-#  define USB_DEVICE_MANUFACTURE_NAME_SIZE  \
-	(sizeof(udc_string_manufacturer_name)-1)
-#else
-#  define USB_DEVICE_MANUFACTURE_NAME_SIZE  0
-#endif
 
 /**
  * \brief USB device product name storage
  * String is allocated only if USB_DEVICE_PRODUCT_NAME is declared
  * by usb application configuration
  */
-#ifdef USB_DEVICE_PRODUCT_NAME
 static uint8_t udc_string_product_name[] = USB_DEVICE_PRODUCT_NAME;
-#  define USB_DEVICE_PRODUCT_NAME_SIZE  (sizeof(udc_string_product_name)-1)
-#else
-#  define USB_DEVICE_PRODUCT_NAME_SIZE  0
-#endif
 
 /**
  * \brief Get USB device serial number
@@ -124,18 +114,19 @@ static uint8_t udc_string_product_name[] = USB_DEVICE_PRODUCT_NAME;
 	{
 		return (const uint8_t *)USB_DEVICE_GET_SERIAL_NAME_POINTER;
 	}
-#  define USB_DEVICE_SERIAL_NAME_SIZE \
-	USB_DEVICE_GET_SERIAL_NAME_LENGTH
-#elif defined USB_DEVICE_SERIAL_NAME
+#else
 	static const uint8_t *udc_get_string_serial_name(void)
 	{
 		return (const uint8_t *)USB_DEVICE_SERIAL_NAME;
 	}
-#  define USB_DEVICE_SERIAL_NAME_SIZE \
-	(sizeof(USB_DEVICE_SERIAL_NAME)-1)
-#else
-#  define USB_DEVICE_SERIAL_NAME_SIZE  0
 #endif
+
+/**
+ * \brief USB configure name storage
+ * String is allocated only if USB_CONFIG_STR_DESC_NAME is declared
+ * by usb application configuration
+ */
+static uint8_t udc_string_configure_desc_name[] = USB_CONFIG_STR_DESC_NAME;
 
 /**
  * \brief USB device string descriptor
@@ -143,8 +134,7 @@ static uint8_t udc_string_product_name[] = USB_DEVICE_PRODUCT_NAME;
  */
 struct udc_string_desc_t {
 	usb_str_desc_t header;
-	le16_t string[Max(Max(USB_DEVICE_MANUFACTURE_NAME_SIZE, \
-			USB_DEVICE_PRODUCT_NAME_SIZE), USB_DEVICE_SERIAL_NAME_SIZE)];
+	le16_t string[USB_COMPOSITE_DEVICE_MAX_STRING_SIZE];
 };
 COMPILER_WORD_ALIGNED
 static UDC_DESC_STORAGE struct udc_string_desc_t udc_string_desc = {
@@ -611,34 +601,30 @@ static bool udc_req_std_dev_get_str_desc(void)
 		udd_set_setup_payload((uint8_t *) &udc_string_desc_languageid,
 				sizeof(udc_string_desc_languageid));
 		break;
-
-#ifdef USB_DEVICE_MANUFACTURE_NAME
-	case 1:
-		str_length = USB_DEVICE_MANUFACTURE_NAME_SIZE;
+	case USB_DEVICE_MANUFACTURE_STRING_ID:
+		//str_length = USB_DEVICE_MANUFACTURE_NAME_SIZE;
 		str = udc_string_manufacturer_name;
 		break;
-#endif
-#ifdef USB_DEVICE_PRODUCT_NAME
-	case 2:
-		str_length = USB_DEVICE_PRODUCT_NAME_SIZE;
+	case USB_DEVICE_PRODUCT_STRING_ID:
+		//str_length = USB_DEVICE_PRODUCT_NAME_SIZE;
 		str = udc_string_product_name;
 		break;
-#endif
-#if defined USB_DEVICE_SERIAL_NAME || defined USB_DEVICE_GET_SERIAL_NAME_POINTER
-	case 3:
-		str_length = USB_DEVICE_SERIAL_NAME_SIZE;
+	case USB_DEVICE_SERIAL_STRING_ID:
+		//str_length = USB_DEVICE_SERIAL_NAME_SIZE;
 		str = udc_get_string_serial_name();
 		break;
-#endif
+	case USB_CONFIG_STR_DESC_STRING_ID:
+		//str_length = USB_CONFIG_STR_DESC_NAME_SIZE;
+		str = udc_string_configure_desc_name;
+		break;
 	default:
 #ifdef UDC_GET_EXTRA_STRING
-		if (UDC_GET_EXTRA_STRING()) {
-			break;
-		}
+		return UDC_GET_EXTRA_STRING();
 #endif
 		return false;
 	}
 
+	str_length = Min(strlen((const char *)str), USB_COMPOSITE_DEVICE_MAX_STRING_SIZE);
 	if (str_length) {
 		for(i = 0; i < str_length; i++) {
 			udc_string_desc.string[i] = cpu_to_le16((le16_t)str[i]);

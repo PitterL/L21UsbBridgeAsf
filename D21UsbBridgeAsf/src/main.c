@@ -35,10 +35,14 @@
  */
 
 #include <asf.h>
+#include <string.h>
 #include "conf_usb.h"
 #include "ui.h"
 #include "uart.h"
+#include "app/u5030_protocol.h"
+#include "external/err_codes.h"
 
+static volatile bool main_b_generic_enable = false;
 static volatile bool main_b_keyboard_enable = false;
 static volatile bool main_b_mouse_enable = false;
 static volatile bool main_b_msc_enable = false;
@@ -72,9 +76,11 @@ int main(void)
 	while (true) {
 
 		if (main_b_msc_enable) {
+			#ifdef USB_COMPOSITE_DEVICE_MSC_EN
 			if (!udi_msc_process_trans()) {
 				sleepmgr_enter_sleep();
 			}
+			#endif
 		}else{
 			sleepmgr_enter_sleep();
 		}
@@ -118,18 +124,33 @@ void main_remotewakeup_disable(void)
  *
  * return true, if the string ID requested is know and managed by this functions
  */
+
 bool main_extra_string(void)
 {
+	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
 	static uint8_t udi_cdc_name[] = "CDC interface";
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
 	static uint8_t udi_msc_name[] = "MSC interface";
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 	static uint8_t udi_hid_mouse_name[] = "HID mouse interface";
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_KBD
 	static uint8_t udi_hid_kbd_name[] = "HID keyboard interface";
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
+	static uint8_t udi_hid_generic_name[] = "QRG-I/F";
+	#endif
 
 	struct extra_strings_desc_t{
 		usb_str_desc_t header;
+		le16_t string[USB_COMPOSITE_DEVICE_MAX_STRING_SIZE];
+		/*
 		le16_t string[Max(Max(Max( \
 			sizeof(udi_cdc_name)-1, sizeof(udi_msc_name)-1),\
 			sizeof(udi_hid_mouse_name)-1), sizeof(udi_hid_kbd_name)-1)];
+		*/
 	};
 	static UDC_DESC_STORAGE struct extra_strings_desc_t extra_strings_desc = {
 		.header.bDescriptorType = USB_DT_STRING
@@ -141,26 +162,41 @@ bool main_extra_string(void)
 
 	// Link payload pointer to the string corresponding at request
 	switch (udd_g_ctrlreq.req.wValue & 0xff) {
+	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
 	case UDI_CDC_IAD_STRING_ID:
-		str_lgt = sizeof(udi_cdc_name)-1;
+		//str_lgt = sizeof(udi_cdc_name)-1;
 		str = udi_cdc_name;
 		break;
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
 	case UDI_MSC_STRING_ID:
-		str_lgt = sizeof(udi_msc_name)-1;
+		//str_lgt = sizeof(udi_msc_name)-1;
 		str = udi_msc_name;
 		break;
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 	case UDI_HID_MOUSE_STRING_ID:
-		str_lgt = sizeof(udi_hid_mouse_name)-1;
+		//str_lgt = sizeof(udi_hid_mouse_name)-1;
 		str = udi_hid_mouse_name;
 		break;
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_KBD
 	case UDI_HID_KBD_STRING_ID:
-		str_lgt = sizeof(udi_hid_kbd_name)-1;
+		//str_lgt = sizeof(udi_hid_kbd_name)-1;
 		str = udi_hid_kbd_name;
 		break;
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
+	case UDI_HID_GENERIC_STRING_ID:
+		//str_lgt = sizeof(udi_hid_generic_name) -1;
+		str = udi_hid_generic_name;
+		break;
+	#endif
 	default:
 		return false;
 	}
 
+	str_lgt = Min(strlen((const char *)str), USB_COMPOSITE_DEVICE_MAX_STRING_SIZE);
 	if (str_lgt!=0) {
 		for( i=0; i<str_lgt; i++) {
 			extra_strings_desc.string[i] = cpu_to_le16((le16_t)str[i]);
@@ -208,6 +244,55 @@ bool main_keyboard_enable(void)
 void main_keyboard_disable(void)
 {
 	main_b_keyboard_enable = false;
+}
+
+bool main_generic_enable(void)
+{
+	main_b_generic_enable = true;
+	
+	u5030_init();
+
+	return true;
+}
+
+void main_generic_disable(void)
+{
+	u5030_deinit();
+	main_b_generic_enable = false;
+}
+
+void main_generic_reportout(uint8_t *ptr)
+{
+	u5030_process_data(ptr, UDI_HID_REPORT_OUT_SIZE);
+}
+
+void main_generic_sof(void)
+{
+	uint8_t *buf;
+	uint32_t count;
+	int32_t ret;
+	
+	ret = u5030_get_response((void **)&buf, &count);
+	if (ret == ERR_NONE) {
+		udi_hid_generic_send_report_in(buf);
+		if (ret != ERR_NONE)
+			; //TODO: should do something
+		u5030_clear_cache();
+	}
+
+	if (ret != ERR_NONE){
+		;  //TODO: how to handle error
+	}
+}
+
+void main_hid_set_feature(uint8_t* report)
+{
+	if (report[0] == 0xAA && report[1] == 0x55
+			&& report[2] == 0xAA && report[3] == 0x55) {
+		// Disconnect USB Device
+		udc_stop();
+		ui_powerdown();
+	}
 }
 
 bool main_cdc_enable(uint8_t port)

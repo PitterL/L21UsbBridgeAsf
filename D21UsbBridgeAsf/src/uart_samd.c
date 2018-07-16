@@ -35,7 +35,7 @@
  */
 
 #include <asf.h>
-#include "conf_example.h"
+#include "board/board.h"
 #include "uart.h"
 #include "main.h"
 #include "ui.h"
