@@ -35,7 +35,7 @@ static struct pin_config g_board_pins_list[] =
     {PIN_PB12, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
 
     //GP_RST
-    {PIN_PB13, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PB13, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, true}},
 
     //GP_CHG
     {PIN_PB14, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_UP, false}},

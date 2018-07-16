@@ -11,6 +11,7 @@
 
 #include "board_i2c.h"
 #include "board_gpio.h"
+#include "board_cdc.h"
 
 void platform_board_init(void);
 

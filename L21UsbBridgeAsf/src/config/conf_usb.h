@@ -172,8 +172,8 @@
 
 //! Default configuration of communication port
 #define  UDI_CDC_DEFAULT_RATE             115200
-#define  UDI_CDC_DEFAULT_STOPBITS         CDC_STOP_BITS_1
-#define  UDI_CDC_DEFAULT_PARITY           CDC_PAR_NONE
+#define  UDI_CDC_DEFAULT_STOPBITS         CDC_STOP_BITS_2
+#define  UDI_CDC_DEFAULT_PARITY           CDC_PAR_EVEN
 #define  UDI_CDC_DEFAULT_DATABITS         8
 
 //! Enable id string of interface to add an extra USB string

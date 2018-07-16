@@ -592,7 +592,7 @@ static bool udc_req_std_dev_set_address(void)
 static bool udc_req_std_dev_get_str_desc(void)
 {
 	uint8_t i;
-	const uint8_t *str;
+	const uint8_t *str = NULL;
 	uint8_t str_length = 0;
 
 	// Link payload pointer to the string corresponding at request
@@ -624,16 +624,18 @@ static bool udc_req_std_dev_get_str_desc(void)
 		return false;
 	}
 
-	str_length = Min(strlen((const char *)str), USB_COMPOSITE_DEVICE_MAX_STRING_SIZE);
-	if (str_length) {
-		for(i = 0; i < str_length; i++) {
-			udc_string_desc.string[i] = cpu_to_le16((le16_t)str[i]);
-		}
+	if (str) {
+		str_length = Min(strlen((const char *)str), USB_COMPOSITE_DEVICE_MAX_STRING_SIZE);
+		if (str_length) {
+			for(i = 0; i < str_length; i++) {
+				udc_string_desc.string[i] = cpu_to_le16((le16_t)str[i]);
+			}
 
-		udc_string_desc.header.bLength = 2 + (str_length) * 2;
-		udd_set_setup_payload(
-			(uint8_t *) &udc_string_desc,
-			udc_string_desc.header.bLength);
+			udc_string_desc.header.bLength = 2 + (str_length) * 2;
+			udd_set_setup_payload(
+				(uint8_t *) &udc_string_desc,
+				udc_string_desc.header.bLength);
+		}
 	}
 
 	return true;
