@@ -13,6 +13,10 @@
 #include "board_gpio.h"
 #include "board_cdc.h"
 
+#ifdef __SAMD21J18A__
+#define BOARD_D21
+#endif
+
 void platform_board_init(void);
 
 #endif

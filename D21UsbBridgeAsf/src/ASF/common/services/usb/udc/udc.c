@@ -600,7 +600,7 @@ static bool udc_req_std_dev_get_str_desc(void)
 	case 0:
 		udd_set_setup_payload((uint8_t *) &udc_string_desc_languageid,
 				sizeof(udc_string_desc_languageid));
-		break;
+		return true;
 	case USB_DEVICE_MANUFACTURE_STRING_ID:
 		//str_length = USB_DEVICE_MANUFACTURE_NAME_SIZE;
 		str = udc_string_manufacturer_name;

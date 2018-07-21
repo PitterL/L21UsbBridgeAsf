@@ -9,9 +9,9 @@
 #include <string.h>
 
 //#include "../driver_init.h"
-#include "u5030_protocol.h"
 #include "crc.h"
 #include "board/board.h"
+#include "u5030_protocol.h"
 #include "external/utils.h"
 #include "external/err_codes.h"
 
@@ -99,17 +99,18 @@ static int32_t set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *dat
 			baudrate = 400;
 			break;
     	}
-		iic_bus_init(&hc->iic, SERCOM4, baudrate, scfg->base.data2.bits.iic1_addr);
+		iic_bus_init(&hc->iic, SERCOM3, baudrate, scfg->base.data2.bits.iic1_addr);
 	}
 	
 	//TODO: Inlitialize UART
 	//TODO: Inlitialize SPI
 
+	//set re-init
 	SET_AND_CLR_BIT(hc->flag, BIT_BUS_INITED, BIT_BUS_REINIT);
-
+	
 	//clear auto repeat
 	CLR_BIT(hc->flag, BIT_AUTO_REPEAT);
-
+	
 	if (dummy)
 		return ERR_NONE;
 	
@@ -154,6 +155,10 @@ static int32_t send_bridge_data(void *host, uint8_t cmd, const uint8_t *data, ui
 		cache->data[0] = cmd_rsp;
 		cache->data[1] = len_rsp;
 	}
+	
+	//clear auto repeat
+	CLR_BIT(hc->flag, BIT_AUTO_REPEAT);
+	
 	return enpack_command(cmd, 0, NULL, len_rsp + 1);
 }
 
@@ -190,7 +195,80 @@ static int32_t test_bridge_cmd(void *host, uint8_t cmd, const uint8_t *data, uin
 	return enpack_command(cmd, cmd, resp, sizeof(resp));
 }
 
+//default address list
 //0x24, 0x25, 0x26, 0x27, 0x34, 0x35, 0x4A, 0x4B, 0x4C, 0x5A, 0x5B, 0x5F
+
+
+static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
+{
+	//never mind [E7, E6, GPIO3, DRDY, GPIO2, LED2, GPIO1, GPIO0]
+	const uint8_t pin_list[] = {GP_IO0, GP_IO1, GP_IO2, GP_IO3, GP_IO4, GP_IO5, GP_RST, GP_CHG}; //8 Max
+	struct port_config config;
+	uint8_t pin;
+	uint8_t ddr;
+	uint8_t port;
+	uint8_t status;
+	bool level;
+	uint8_t resp[3];
+
+	if (count < 2)
+		return -ERR_INVALID_DATA;
+
+	ddr = data[0];
+	port = data[1];
+	status = 0;
+	for (uint8_t i = 0; i < ARRAY_SIZE(pin_list); i++) {
+		port_get_config_defaults(&config);
+		pin = pin_list[i];
+		if (TEST_BIT(ddr, i)) {
+			config.direction = PORT_PIN_DIR_OUTPUT;
+			port_pin_set_output_level(pin, !!TEST_BIT(port, i));
+		}else {
+			config.direction = PORT_PIN_DIR_INPUT;
+			config.input_pull = TEST_BIT(port, i) ? PORT_PIN_PULL_UP : PORT_PIN_PULL_NONE;
+		}
+		
+		port_pin_set_config(pin, &config);
+		level = port_pin_get_input_level(pin);
+		if (level)
+			status |= (1 << i);
+	}
+
+	resp[0] = ddr;
+	resp[1] = status;
+	resp[2] = port;
+	return enpack_command(cmd, cmd, resp, sizeof(resp));
+}
+
+static int32_t get_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
+{
+	//never mind [E7, E6, GPIO3, DRDY, GPIO2, LED2, GPIO1, GPIO0]
+	const uint8_t pin_list[] = {GP_IO0, GP_IO1, GP_IO2, GP_IO3, GP_IO4, GP_IO5, GP_RST, GP_CHG}; //8 Max
+	uint8_t pin;
+	uint8_t ddr;
+	uint8_t port;
+	uint8_t status;
+	bool level;
+	uint8_t resp[3];
+
+	if (count < 2)
+		return -ERR_INVALID_DATA;
+
+	ddr = 0;
+	port = 0;
+	status = 0;
+	for (uint8_t i = 0; i < ARRAY_SIZE(pin_list); i++) {
+		pin = pin_list[i];
+		level = port_pin_get_input_level(pin);
+		if (level)
+			status |= (1 << i);
+	}
+
+	resp[0] = ddr;
+	resp[1] = status;
+	resp[2] = port;
+	return enpack_command(cmd, cmd, resp, sizeof(resp));
+}
 
 static struct cmd_func_map command_func_map_list[] = {
 	//Base command
@@ -200,8 +278,8 @@ static struct cmd_func_map command_func_map_list[] = {
 	{CMD_GET_CONFIG, NULL},
 	{CMD_CONFIG_READ_PINS, NULL},
 	{CMD_READ_PINS, NULL},
-	{CMD_SET_GPIOS, NULL},
-	{CMD_READ_GPIOS, NULL},
+	{CMD_SET_GPIOS, set_bridge_gpios},
+	{CMD_READ_GPIOS, get_bridge_gpios},
 	{CMD_PWM, NULL},
 	{CMD_SET_IO_C, NULL},
 	{CMD_GET_IO_C, NULL},
@@ -403,6 +481,10 @@ int32_t u5030_get_response(void **buf_ptr, uint32_t *buf_ptr_size)
 			}
 
 			if (pin){
+				#ifdef BOARD_D21
+					chkv = !chkv;  //Reserved by N-Mos
+				#endif
+
 				if (port_pin_get_input_level(pin) == chkv) {
 					if (scfg->dym.repeat.cfg.bits.bus == REPEAT_BUS_SPI_UART) {
 						;//TODO

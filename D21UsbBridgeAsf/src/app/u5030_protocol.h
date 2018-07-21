@@ -465,17 +465,17 @@ union config_data11{
 		Returns the contents of the DDR and PORT registers, and the states of the pins.
 	Command: 
 		//DDR settings
-			DATA1: [E7, E6, GPIO3, DRDY, GPIO2, LED2, GPIO1, GPIO0]
+			DATA1: input or output for [E7, E6, GPIO3, DRDY, GPIO2, LED2, GPIO1, GPIO0] (details should see code)
 		//PORT register settings
-			DATA2: Same as above
+			DATA2: if input, the config of pullup; if out port, the level of output 
 	Response:
 			DATA0: CMD_SET_GPIOS 
 		//DDR settings
-			DATA1: Same as Command
+			DATA1: Same as command
 		//PIN states
-			DATA2: Same as above
+			DATA2: Pin states
 		//PORT register contents
-			DATA3: Same as above
+			DATA3: Same as command
 */
 
 #define CMD_READ_GPIOS 0x84
@@ -1312,14 +1312,14 @@ struct cmd_func_map{
 	cmd_func func;
 };
 
-#ifdef BOARD_BRIDGE_D21
+#ifdef BOARD_D21
 #define GPIO_P_0 GP_TP2
 #define GPIO_P_1 GP_CHG
-#define GPIO_P_LED2 GP_IO0
+#define GPIO_P_LED2 GP_IO_LED2_EN
 #else
 #define GPIO_P_0 USB_ID	//Button on L21 board
 #define GPIO_P_1 GP_CHG
-#define GPIO_P_LED2 GP_IO0
+#define GPIO_P_LED2 GP_IO_LED2_EN
 #endif
 
 int32_t u5030_process_data(const uint8_t *data, uint32_t count);

@@ -24,6 +24,10 @@ int32_t set_default_iic_pads(void *hw, struct i2c_master_config *const cfg)
 		pad0    = PINMUX_PA12D_SERCOM4_PAD0;
 		pad1    = PINMUX_PA13D_SERCOM4_PAD1;
 		break;
+	case (uint32_t)SERCOM3:
+		pad0 = PINMUX_PA16D_SERCOM3_PAD0;
+		pad1 = PINMUX_PA17D_SERCOM3_PAD1;
+		break;
 	case (uint32_t)SERCOM1:
 	default:
 		pad0 = PINMUX_PA16C_SERCOM1_PAD0;
