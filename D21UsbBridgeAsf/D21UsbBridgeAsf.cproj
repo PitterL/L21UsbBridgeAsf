@@ -838,10 +838,28 @@
     <Folder Include="src\external\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\app\common.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\common.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\app\crc.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\app\crc.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\d21_protocol.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\d21_protocol.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\hiddf_intf.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\hiddf_intf.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\app\u5030_protocol.c">
