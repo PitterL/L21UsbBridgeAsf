@@ -361,6 +361,7 @@
       <Value>../src/config</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c/i2c_sam0</Value>
+      <Value>../src/ASF/common/services/usb/class/hid/device/generic</Value>
     </ListValues>
   </armgcc.compiler.directories.IncludePaths>
   <armgcc.compiler.optimization.level>Optimize for size (-Os)</armgcc.compiler.optimization.level>
@@ -373,14 +374,18 @@
     <ListValues>
       <Value>libarm_cortexM0l_math</Value>
       <Value>libm</Value>
+      <Value>u5030_protocol.o</Value>
     </ListValues>
   </armgcc.linker.libraries.Libraries>
   <armgcc.linker.libraries.LibrarySearchPaths>
     <ListValues>
       <Value>../src/ASF/thirdparty/CMSIS/Lib/GCC</Value>
+      <Value>D:\Users\Pitter.Liao\atmel studio\L21UsbBridgeAsf\L21UsbBridgeAsf\src\app</Value>
+      <Value>D:\Users\a41450\atmel studio\L21UsbBridgeAsf\L21UsbBridgeAsf\src\app</Value>
     </ListValues>
   </armgcc.linker.libraries.LibrarySearchPaths>
   <armgcc.linker.optimization.GarbageCollectUnusedSections>True</armgcc.linker.optimization.GarbageCollectUnusedSections>
+  <armgcc.linker.memorysettings.ExternalRAM />
   <armgcc.linker.miscellaneous.LinkerFlags>-Wl,--defsym,STACK_SIZE=0x0B00 -T../src/ASF/sam0/utils/linker_scripts/saml21/gcc/saml21j18b_flash.ld</armgcc.linker.miscellaneous.LinkerFlags>
   <armgcc.assembler.general.IncludePaths>
     <ListValues>
@@ -571,11 +576,14 @@
     <ListValues>
       <Value>libarm_cortexM0l_math</Value>
       <Value>libm</Value>
+      <Value>u5030_protocol.o</Value>
     </ListValues>
   </armgcc.linker.libraries.Libraries>
   <armgcc.linker.libraries.LibrarySearchPaths>
     <ListValues>
       <Value>../src/ASF/thirdparty/CMSIS/Lib/GCC</Value>
+      <Value>D:\Users\Pitter.Liao\atmel studio\L21UsbBridgeAsf\L21UsbBridgeAsf\src\app</Value>
+      <Value>D:\Users\a41450\atmel studio\L21UsbBridgeAsf\L21UsbBridgeAsf\src\app</Value>
     </ListValues>
   </armgcc.linker.libraries.LibrarySearchPaths>
   <armgcc.linker.optimization.GarbageCollectUnusedSections>True</armgcc.linker.optimization.GarbageCollectUnusedSections>
@@ -784,12 +792,6 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\app\crc.h">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\app\u5030_protocol.c">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="src\app\u5030_protocol.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ASF\common\boards\user_board.h">

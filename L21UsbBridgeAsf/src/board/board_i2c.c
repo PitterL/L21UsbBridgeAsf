@@ -2,7 +2,7 @@
  * board.c
  *
  * Created: 7/3/2018 9:55:53 AM
- *  Author: A41450
+ *  Author: Pitter.Liao
  */ 
 
 #include <status_codes.h>

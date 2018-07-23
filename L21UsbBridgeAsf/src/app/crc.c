@@ -2,7 +2,7 @@
  * crc.c
  *
  * Created: 6/20/2018 6:57:50 PM
- *  Author: A41450
+ *  Author: Pitter.Liao
  */
 
 #include <stddef.h>
