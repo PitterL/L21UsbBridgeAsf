@@ -7,6 +7,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <delay.h>
 
 //#include "../driver_init.h"
 #include "crc.h"
@@ -205,17 +206,27 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
 	uint8_t pin;
 	uint8_t ddr;
 	uint8_t port;
+	uint8_t mask = 0;
+	uint8_t tdelay = 0;
 	uint8_t status;
 	bool level;
-	uint8_t rdata[3];
+	uint8_t rdata[5];
 
 	if (count < 2)
 		return -ERR_INVALID_DATA;
 
 	ddr = data[0];
 	port = data[1];
+	//User extension
+	if (count >= 4) {
+		mask = data[2];
+		tdelay = data[3];
+	}
 	status = 0;
 	for (uint8_t i = 0; i < ARRAY_SIZE(pin_list); i++) {
+		if (TEST_BIT(mask, i))
+			continue;
+
 		port_get_config_defaults(&config);
 		pin = pin_list[i];
 		if (TEST_BIT(ddr, i)) {
@@ -232,9 +243,31 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
 			status |= (1 << i);
 	}
 
+	if (tdelay) {
+		for (uint8_t i = 0; i < ARRAY_SIZE(pin_list); i++) {
+			if (TEST_BIT(mask, i))
+				continue;
+
+			delay_ms(tdelay);
+
+			if (TEST_BIT(ddr, i)) {
+				port_pin_set_output_level(pin, !TEST_BIT(port, i));	
+				//status ^= (1 << i);	//Get pin level actual
+				level = port_pin_get_input_level(pin);
+				if (level)
+					status |= (1 << i);
+				else
+					status ^= (1 << i);
+			}
+		}
+	}
+
 	rdata[0] = ddr;
 	rdata[1] = status;
 	rdata[2] = port;
+	rdata[3] = mask;
+	rdata[4] = tdelay;
+
 	return enpack_response(resp, cmd, rdata, sizeof(rdata));
 }
 

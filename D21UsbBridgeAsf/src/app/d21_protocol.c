@@ -242,7 +242,7 @@ int32_t d21_parse_command(void *host, const uint8_t *data, uint32_t count)
     bcmd = data[1];
 
     if (cmd != CMD_D21_EXTENTION_BULK_DATA)
-        return result;
+		return result;
 
 	for (uint32_t i = 0; i < ARRAY_SIZE(d21_command_func_map_list); i++)
 	{

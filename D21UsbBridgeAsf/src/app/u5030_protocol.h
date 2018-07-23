@@ -463,17 +463,27 @@ union config_data11{
 		Returns the contents of the DDR and PORT registers, and the states of the pins.
 	Command: 
 		//DDR settings
-			DATA1: input or output for [E7, E6, GPIO3, DRDY, GPIO2, LED2, GPIO1, GPIO0] (details should see code)
+			DATA[1]: input or output for [E7, E6, GPIO3, DRDY, GPIO2, LED2, GPIO1, GPIO0] (details should see code)
 		//PORT register settings
 			DATA2: if input, the config of pullup; if out port, the level of output 
+		[USER extension]
+		//MASK settings: 
+			DATA[3]: if masked, skip to operate this pin
+		//Toggle delay: 
+			DATA[4]: the Toggle delay value(ms), if set, the pin will excute toggle after the delay
 	Response:
-			DATA0: CMD_SET_GPIOS 
+			DATA[0]: CMD_SET_GPIOS 
 		//DDR settings
-			DATA1: Same as command
+			DATA[1]: same as command
 		//PIN states
-			DATA2: Pin states
+			DATA[2]: Pin states
 		//PORT register contents
-			DATA3: Same as command
+			DATA[3]: same as command
+		[USER extension]
+		//MASK settings: 
+			DATA[4]: same as command
+		//Toggle delay
+			DATA[5]: same as command
 */
 
 #define CMD_READ_GPIOS 0x84
@@ -955,16 +965,14 @@ struct config_repeat{
 
 
 /*******************************
-	User defined extension 
+	User extension 
 *******************************/
 #define CMD_NONE 0x0
-#define CMD_NAK 0xFF
 /*
-	<CMD_NAK>
-		This is response from bridge to host, NAK last command from host
+	<CMD_NONE>
+		This is micro definition
 	Command: NA
-	Response:
-		DATA0: CMD_NAK
+	Response: NA
 */
 
 #define CMD_EXTENSION_CONFIG 0xF9
@@ -1008,6 +1016,15 @@ union config_edat1{
 #define COM_MODE_IIC_UART 4
 #define COM_MODE_DUAL_UART 5
 #define COM_MODE_IIC_UART_SPI_FULL 7
+
+#define CMD_NAK 0xFF
+/*
+	<CMD_NAK>
+		This is response from bridge to host, NAK last command from host
+	Command: NA
+	Response:
+		DATA0: CMD_NAK
+*/
 
 #define DESC_GET(_x, _name) ((_x) >> _name##_SHIFT & _name##_MASK)
 #define DESC_SET(_x, _name, _val) (((_x) & ~(_name##_MASK << _name##_SHIFT)) | (((_val) & _name##_MASK) << _name##_SHIFT))

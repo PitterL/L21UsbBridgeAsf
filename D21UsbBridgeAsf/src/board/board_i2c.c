@@ -7,7 +7,7 @@
 
 #include <status_codes.h>
 #include <string.h>
-#include "board_i2c.h"
+#include "board.h"
 #include "external/err_codes.h"
 
 int32_t set_default_iic_pads(void *hw, struct i2c_master_config *const cfg)
@@ -65,7 +65,7 @@ int32_t iic_bus_deinit(iic_controller_t *ihc)
  */
 int32_t iic_write(iic_controller_t *ihc, const uint8_t *const buf, const uint16_t length)
 {
-	struct i2c_master_packet pkg;
+	struct i2c_master_packet_w pkg;
 	enum status_code result;
 	
 	memset(&pkg, 0, sizeof(pkg));
@@ -73,7 +73,7 @@ int32_t iic_write(iic_controller_t *ihc, const uint8_t *const buf, const uint16_
 	pkg.data_length = length;
 	pkg.data = buf;
 	
-	result = i2c_master_write_packet_wait(&ihc->module, &pkg);
+	result = i2c_master_write_packet_wait(&ihc->module, (struct i2c_master_packet *)&pkg);
 	if (result == STATUS_OK)
 		return ERR_NONE;
 	

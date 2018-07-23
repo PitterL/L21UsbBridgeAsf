@@ -199,15 +199,17 @@ void por_on(bool en)
         pwr_3v3_en(true);
         pwr_5v_en(true);
         //here need a delay for at least 90ns
-        //delay_ms(5);
+        delay_ms(5);
 
         io_rst_en(false);
         //delay 150ms for reset finished, but i don't wanto wait so long
-        //delay_ms(20);
+        delay_ms(150);
     }else{
         pwr_5v_en(false);
         pwr_3v3_en(false);
         pwr_vio_en(false);
         io_rst_en(true);
+
+        delay_ms(20);
     }
 }

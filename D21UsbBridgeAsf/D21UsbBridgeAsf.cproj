@@ -560,6 +560,8 @@
       <Value>I2C_MASTER_CALLBACK_MODE=true</Value>
       <Value>BOARD=USER_BOARD</Value>
       <Value>ADC_CALLBACK_MODE=true</Value>
+      <Value>SYSTICK_MODE1</Value>
+      <Value>CYCLE_MODE</Value>
     </ListValues>
   </armgcc.compiler.symbols.DefSymbols>
   <armgcc.compiler.directories.IncludePaths>
@@ -750,6 +752,10 @@
     <Folder Include="src\" />
     <Folder Include="src\app\" />
     <Folder Include="src\ASF\" />
+    <Folder Include="src\ASF\common2\" />
+    <Folder Include="src\ASF\common2\services\" />
+    <Folder Include="src\ASF\common2\services\delay\" />
+    <Folder Include="src\ASF\common2\services\delay\sam0\" />
     <Folder Include="src\ASF\common\" />
     <Folder Include="src\ASF\common\boards\" />
     <Folder Include="src\ASF\common\components\" />
@@ -866,6 +872,15 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\app\u5030_protocol.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\ASF\common2\services\delay\delay.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\ASF\common2\services\delay\sam0\systick_counter.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\ASF\common2\services\delay\sam0\systick_counter.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ASF\common\services\usb\class\cdc\device\example\saml21j18b_saml21_xplained_pro\ui.c">
