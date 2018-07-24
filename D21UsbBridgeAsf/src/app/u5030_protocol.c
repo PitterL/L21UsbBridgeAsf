@@ -53,7 +53,7 @@ int32_t set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data, uint
 	bool dummy = data == (uint8_t *)&scfg->ext;
 
 	if (cfg_size > count)
-		return -ERR_INVALID_DATA;
+		return ERR_INVALID_DATA;
 
 	if (!dummy)	{ //here may be itself outside	
 		checksum = DESC_GET(data[0], EXT_CONFIG_DATA1_COMMUNICATION_MODE_CHECKSUM);
@@ -115,12 +115,12 @@ int32_t send_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t 
 	int32_t retry = scfg->base.data2.bits.iic_retry ? 3 : 0;
 
 	if (count < 2)
-		return -ERR_INVALID_DATA;
+		return ERR_INVALID_DATA;
 
 	lenw = data[0];
 	lenr = data[1];
 	if (lenw + 2 > count)
-		return -ERR_INVALID_DATA;
+		return ERR_INVALID_DATA;
 
 	//Need initialize bus before transfer data
 	if (TEST_BIT(hc->flag, BIT_BUS_REINIT) || !TEST_BIT(hc->flag, BIT_BUS_INITED)) {
@@ -154,13 +154,13 @@ static int32_t set_bridge_auto_repeat(void *host, uint8_t cmd, const uint8_t *da
 	uint8_t rdata;
 
 	if (count < 3)
-		return -ERR_INVALID_DATA;
+		return ERR_INVALID_DATA;
 
 	lenw = data[2];
 	//lenr = data[3];
 	count -= 3;
 	if (lenw > count)
-		return -ERR_INVALID_DATA;
+		return ERR_INVALID_DATA;
 
 	memcpy(&scfg->dym.repeat, data, lenw + 3);
 	SET_BIT(hc->flag, BIT_AUTO_REPEAT);
@@ -213,7 +213,7 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
 	uint8_t rdata[5];
 
 	if (count < 2)
-		return -ERR_INVALID_DATA;
+		return ERR_INVALID_DATA;
 
 	ddr = data[0];
 	port = data[1];
@@ -232,33 +232,38 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
 		if (TEST_BIT(ddr, i)) {
 			config.direction = PORT_PIN_DIR_OUTPUT;
 			port_pin_set_output_level(pin, !!TEST_BIT(port, i));
+			port_pin_set_config(pin, &config);
+			level = port_pin_get_output_level(pin);
 		}else {
 			config.direction = PORT_PIN_DIR_INPUT;
 			config.input_pull = TEST_BIT(port, i) ? PORT_PIN_PULL_UP : PORT_PIN_PULL_NONE;
+			port_pin_set_config(pin, &config);
+			level = port_pin_get_input_level(pin);
 		}
 		
-		port_pin_set_config(pin, &config);
-		level = port_pin_get_input_level(pin);
 		if (level)
 			status |= (1 << i);
 	}
 
 	if (tdelay) {
+		delay_ms(tdelay);
+		
 		for (uint8_t i = 0; i < ARRAY_SIZE(pin_list); i++) {
 			if (TEST_BIT(mask, i))
 				continue;
 
-			delay_ms(tdelay);
-
 			if (TEST_BIT(ddr, i)) {
-				port_pin_set_output_level(pin, !TEST_BIT(port, i));	
+				port_pin_toggle_output_level(pin);	
 				//status ^= (1 << i);	//Get pin level actual
+				level = port_pin_get_output_level(pin);
+			}else {
 				level = port_pin_get_input_level(pin);
-				if (level)
-					status |= (1 << i);
-				else
-					status ^= (1 << i);
 			}
+			
+			if (level)
+				status |= (1 << i);
+			else
+				status ^= (1 << i);
 		}
 	}
 
@@ -269,6 +274,46 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
 	rdata[4] = tdelay;
 
 	return enpack_response(resp, cmd, rdata, sizeof(rdata));
+}
+
+static int32_t set_bridge_gpio_ext(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
+{
+	controller_t *hc = (controller_t *)host;
+	response_data_t *resp = &hc->response;
+	const uint8_t pin_list[] = {GP_IO0, GP_IO1, GP_CHG, GP_IO2, GP_IO3, GP_IO4, GP_RST, GP_IO5}; //8 Max
+	uint8_t pin_id;
+	uint8_t pin;
+	uint8_t toggle_en;
+	uint8_t udelay_time;
+	uint8_t mdelay_time;
+	bool level;
+
+	if (count < 2)
+		return ERR_INVALID_DATA;
+
+	pin_id = data[0];
+	level = data[1];
+	toggle_en = data[2];
+	udelay_time = data[3];
+	mdelay_time = data[4];
+
+	if (pin_id > ARRAY_SIZE(pin_list))
+		return ERR_INVALID_DATA;
+	
+	pin = pin_list[pin_id];
+
+	port_pin_set_output_level(pin, !!level);
+	if (toggle_en) {
+		if (udelay_time)
+			delay_us(udelay_time);
+
+		if (mdelay_time)
+			delay_ms(mdelay_time);
+		
+		port_pin_toggle_output_level(pin);
+	}
+
+	return enpack_response(resp, cmd, data, count);
 }
 
 static int32_t get_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
@@ -285,7 +330,7 @@ static int32_t get_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
 	uint8_t rdata[3];
 
 	if (count < 2)
-		return -ERR_INVALID_DATA;
+		return ERR_INVALID_DATA;
 
 	ddr = 0;
 	port = 0;
@@ -351,6 +396,7 @@ static struct cmd_func_map u5030_command_func_map_list[] = {
 	//Extension command
 	{CMD_NAK, NULL},
 	{CMD_EXTENSION_CONFIG, set_bridge_ext_config},
+	{CMD_SET_GPIO_EXT, set_bridge_gpio_ext},
 }; 
 
 static int32_t enpack_response(response_data_t *resp, uint8_t rdata, const uint8_t *data, uint32_t count)
@@ -360,7 +406,7 @@ static int32_t enpack_response(response_data_t *resp, uint8_t rdata, const uint8
 	uint32_t buf_size = sizeof(cache->data);
 
 	if (count + 1 > buf_size)
-		return -ERR_NO_MEMORY;
+		return ERR_NO_MEMORY;
 	
 	if (data != NULL)   //If data is Null, that means resp has been filled
 		buf[0] = rdata;

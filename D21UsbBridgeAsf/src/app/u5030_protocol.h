@@ -1017,6 +1017,14 @@ union config_edat1{
 #define COM_MODE_DUAL_UART 5
 #define COM_MODE_IIC_UART_SPI_FULL 7
 
+#define CMD_SET_GPIO_EXT 0x73
+/*
+	<CMD_SET_GPIO_EXT>
+	Command: 
+	Response:
+*/
+
+
 #define CMD_NAK 0xFF
 /*
 	<CMD_NAK>

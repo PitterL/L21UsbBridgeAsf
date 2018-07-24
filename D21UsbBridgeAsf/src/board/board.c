@@ -3,7 +3,7 @@
 
 void platform_board_init(void)
 {
-    //delay_init();
-    
+    delay_init();
+
     board_gpio_init();
 }

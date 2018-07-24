@@ -12,6 +12,7 @@
 #include "board_i2c.h"
 #include "board_gpio.h"
 #include "board_cdc.h"
+#include "board_clock.h"
 
 #ifdef __SAMD21J18A__
 #define BOARD_D21
