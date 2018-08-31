@@ -463,7 +463,9 @@ union config_data11{
 		Returns the contents of the DDR and PORT registers, and the states of the pins.
 	Command: 
 		//DDR settings
-			DATA[1]: input or output for [E7, E6, GPIO3, DRDY, GPIO2, LED2, GPIO1, GPIO0] (details should see code)
+			DATA[1]: input or output for 
+				Old -- [E7, E6, GPIO3, DRDY, GPIO2, LED2, GPIO1, GPIO0]
+				New -- [GP_IO0, GP_IO1, GP_CHG, GP_IO2, GP_IO3, GP_IO4, GP_RST, GP_IO5] (details should see code)
 		//PORT register settings
 			DATA2: if input, the config of pullup; if out port, the level of output 
 		[USER extension]
@@ -1021,9 +1023,35 @@ union config_edat1{
 /*
 	<CMD_SET_GPIO_EXT>
 	Command: 
+		DATA1: Scmd		
+		DATA2: Pin
+			{GP_IO0, GP_IO1, GP_CHG, GP_IO2, GP_IO3, GP_IO4, GP_RST, GP_IO5, 
+				UART_TX, UART_RX, GP_WIFI_WAKE, IIC_SDA, IIC_SCL, GP_VDD33_EN, SPI_WIFI_MISO, SPI_WIFI_SS,
+				SPI_WIFI_MOSI, SPI_WIFI_SCK, GP_IO_BTLD, GP_VDD5_EN, GP_IO_PWR, GP_IO_LED2_EN, GP_WIFI_EN, GP_WIFI_RST,
+				GP_VDDIO_EN}
+		IF GPIO SET:
+			DATA[Pin select id] + 1: Output level
+		IF PIN MUX SET:
+			DATA[Output level] + 1: Port mux_position
+			DATA[Output level] + 2: Port direction
+			DATA[Output level] + 3: Port input_pull
+			DATA[Output level] + 4: Port powersave
+		IF Toggle SET:
+			DATA [PIN MUX SET] + 1: Mdelay for toggle
+			DATA [PIN MUX SET] + 2: Udelay for toggle
 	Response:
+		Same as command
 */
+#define SET_GPIO_EXT_DATA1_SCMD_GPIO_SHIFT 0
+#define SET_GPIO_EXT_DATA1_SCMD_MUX_SHIFT 1
+#define SET_GPIO_EXT_DATA1_SCMD_TOGGLE_SHIFT 2
 
+#define CMD_CONFIG_IO_EXT 0x75
+/*
+	<CMD_CONFIG_IO_EXT>
+	Command: TBD
+	Response:	TBD
+*/
 
 #define CMD_NAK 0xFF
 /*
@@ -1093,7 +1121,7 @@ typedef struct {
 #define GPIO_P_0 GP_TP2
 #define GPIO_P_1 GP_CHG
 #define GPIO_P_LED2 GP_IO_LED2_EN
-#define CHG_ACTIVE_LEVEL_INVERT
+//#define CHG_ACTIVE_LEVEL_INVERT
 #else
 #define GPIO_P_0 USB_ID	//Button on L21 board
 #define GPIO_P_1 GP_CHG

@@ -205,9 +205,8 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
 	struct port_config config;
 	uint8_t pin;
 	uint8_t ddr;
-	uint8_t port;
+	uint8_t value;
 	uint8_t mask = 0;
-	uint8_t tdelay = 0;
 	uint8_t status;
 	bool level;
 	uint8_t rdata[5];
@@ -216,12 +215,11 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
 		return ERR_INVALID_DATA;
 
 	ddr = data[0];
-	port = data[1];
+	value = data[1];
 	//User extension
-	if (count >= 4) {
+	if (count >= 3)
 		mask = data[2];
-		tdelay = data[3];
-	}
+
 	status = 0;
 	for (uint8_t i = 0; i < ARRAY_SIZE(pin_list); i++) {
 		if (TEST_BIT(mask, i))
@@ -229,14 +227,15 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
 
 		port_get_config_defaults(&config);
 		pin = pin_list[i];
+			
 		if (TEST_BIT(ddr, i)) {
 			config.direction = PORT_PIN_DIR_OUTPUT;
-			port_pin_set_output_level(pin, !!TEST_BIT(port, i));
+			port_pin_set_output_level(pin, !!TEST_BIT(value, i));
 			port_pin_set_config(pin, &config);
 			level = port_pin_get_output_level(pin);
 		}else {
 			config.direction = PORT_PIN_DIR_INPUT;
-			config.input_pull = TEST_BIT(port, i) ? PORT_PIN_PULL_UP : PORT_PIN_PULL_NONE;
+			config.input_pull = TEST_BIT(value, i) ? PORT_PIN_PULL_UP : PORT_PIN_PULL_NONE;
 			port_pin_set_config(pin, &config);
 			level = port_pin_get_input_level(pin);
 		}
@@ -245,33 +244,10 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
 			status |= (1 << i);
 	}
 
-	if (tdelay) {
-		delay_ms(tdelay);
-		
-		for (uint8_t i = 0; i < ARRAY_SIZE(pin_list); i++) {
-			if (TEST_BIT(mask, i))
-				continue;
-
-			if (TEST_BIT(ddr, i)) {
-				port_pin_toggle_output_level(pin);	
-				//status ^= (1 << i);	//Get pin level actual
-				level = port_pin_get_output_level(pin);
-			}else {
-				level = port_pin_get_input_level(pin);
-			}
-			
-			if (level)
-				status |= (1 << i);
-			else
-				status ^= (1 << i);
-		}
-	}
-
 	rdata[0] = ddr;
 	rdata[1] = status;
-	rdata[2] = port;
+	rdata[2] = value;
 	rdata[3] = mask;
-	rdata[4] = tdelay;
 
 	return enpack_response(resp, cmd, rdata, sizeof(rdata));
 }
@@ -280,35 +256,51 @@ static int32_t set_bridge_gpio_ext(void *host, uint8_t cmd, const uint8_t *data,
 {
 	controller_t *hc = (controller_t *)host;
 	response_data_t *resp = &hc->response;
-	const uint8_t pin_list[] = {GP_IO0, GP_IO1, GP_CHG, GP_IO2, GP_IO3, GP_IO4, GP_RST, GP_IO5}; //8 Max
-	uint8_t pin_id;
+	const uint8_t *buf = data;
+	uint32_t size = count;
+	uint8_t scmd;
 	uint8_t pin;
-	uint8_t toggle_en;
-	uint8_t udelay_time;
-	uint8_t mdelay_time;
-	bool level;
+	uint8_t val;
+	struct system_pinmux_config port_config;
 
 	if (count < 2)
 		return ERR_INVALID_DATA;
 
-	pin_id = data[0];
-	level = data[1];
-	toggle_en = data[2];
-	udelay_time = data[3];
-	mdelay_time = data[4];
-
-	if (pin_id > ARRAY_SIZE(pin_list))
-		return ERR_INVALID_DATA;
+	scmd = *buf++;
+	pin = *buf++;
+	size -= 2;
 	
-	pin = pin_list[pin_id];
+	if (TEST_BIT(scmd, SET_GPIO_EXT_DATA1_SCMD_GPIO_SHIFT)) {
+		size--;
+		if (size < 0)
+			return ERR_INVALID_DATA;
+		port_pin_set_output_level(pin, !!(*buf++));
+	}
 
-	port_pin_set_output_level(pin, !!level);
-	if (toggle_en) {
-		if (udelay_time)
-			delay_us(udelay_time);
+	if (TEST_BIT(scmd, SET_GPIO_EXT_DATA1_SCMD_MUX_SHIFT)) {
+		size -= 4;
+		if (size < 0)
+			return ERR_INVALID_DATA;
 
-		if (mdelay_time)
-			delay_ms(mdelay_time);
+		port_config.mux_position = *buf++;
+        port_config.direction = *buf++;
+        port_config.input_pull = *buf++;
+        port_config.powersave = *buf++;
+		system_pinmux_pin_set_config(pin, &port_config);
+	}
+
+	if (TEST_BIT(scmd, SET_GPIO_EXT_DATA1_SCMD_TOGGLE_SHIFT)) {
+		size -= 2;
+		if (size < 0)
+			return ERR_INVALID_DATA;
+
+		val = *buf++;
+		if (val)
+			delay_ms(val);
+		
+		val = *buf++;
+		if (val)
+			delay_us(val);
 		
 		port_pin_toggle_output_level(pin);
 	}

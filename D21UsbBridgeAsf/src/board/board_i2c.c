@@ -10,7 +10,7 @@
 #include "board.h"
 #include "external/err_codes.h"
 
-int32_t set_default_iic_pads(void *hw, struct i2c_master_config *const cfg)
+int32_t i2c_master_get_default_pads(void *hw, struct i2c_master_config *const cfg)
 {
 	uint32_t pad0, pad1;
 
@@ -44,7 +44,7 @@ int32_t set_default_iic_pads(void *hw, struct i2c_master_config *const cfg)
 int32_t iic_bus_init(iic_controller_t *ihc, void *hw, uint8_t baudrate, uint8_t addr)
 {
 	i2c_master_get_config_defaults(&ihc->config);
-	set_default_iic_pads(hw, &ihc->config);
+	i2c_master_get_default_pads(hw, &ihc->config);
 	i2c_master_init(&ihc->module, hw, &ihc->config);
 	i2c_master_enable(&ihc->module);
 	ihc->addr = addr;
