@@ -16,6 +16,7 @@ typedef struct{
 	uint8_t addr;
 }iic_controller_t;
 
+void iic_set_address(iic_controller_t *ihc, uint8_t addr);
 int32_t iic_bus_init(iic_controller_t *ihc, void *hw, uint8_t baudrate, uint8_t addr);
 int32_t iic_bus_deinit(iic_controller_t *ihc);
 int32_t iic_write(iic_controller_t *ihc, const uint8_t *const buf, const uint16_t length);

@@ -260,12 +260,17 @@ void main_generic_disable(void)
 	hiddf_intf_deinit();
 	main_b_generic_enable = false;
 }
-
+/*
+  Receive the data from Host
+*/
 void main_generic_reportout(uint8_t *ptr)
 {
 	hiddf_intf_receive(ptr, UDI_HID_REPORT_OUT_SIZE);
 }
 
+/*
+  In SOF frame, we prepare the data to send to Host
+*/
 void main_generic_sof(void)
 {
 	hiddf_intf_send(udi_hid_generic_send_report_in);

@@ -17,51 +17,68 @@
 
 uint8_t i2c_transfer_data(void *host, const uint8_t *wdata, uint32_t wlen, uint8_t *rdata, uint32_t rlen, uint8_t *ecode, int32_t retry)
 {
-	controller_t *hc = (controller_t *)host;
-	uint8_t cmd_rsp;
-	uint8_t len_rsp;
-	int32_t ret;
-	
-	do {
-		cmd_rsp = IIC_DATA_OK;
-		len_rsp = 0;
-		ret = ERR_NONE;
-		
-		//write
-		if (wlen) {
-			ret = iic_write(&hc->iic, wdata, wlen);
-			if (ret == ERR_BAD_ADDRESS) {
-				cmd_rsp = IIC_DATA_NAK_ADDR;
-			}else if(ret) {
-				cmd_rsp = IIC_DATA_NAK_WRITE;
-			}
-		}
+    controller_t *hc = (controller_t *)host;
+    uint8_t cmd_rsp;
+    uint8_t len_rsp;
+    int32_t ret;
+    
+    do {
+        cmd_rsp = IIC_DATA_OK;
+        len_rsp = 0;
+        ret = ERR_NONE;
+        
+        //write
+        if (wlen) {
+            ret = iic_write(&hc->iic, wdata, wlen);
+            if (ret == ERR_BAD_ADDRESS) {
+                cmd_rsp = IIC_DATA_NAK_ADDR;
+            }else if(ret) {
+                cmd_rsp = IIC_DATA_NAK_WRITE;
+            }
+        }
 
-		//read
-		if (ret == ERR_NONE) {
-			if (rlen) {
-				ret = iic_read(&hc->iic, rdata, rlen);
-				if (ret == ERR_BAD_ADDRESS) {
-					cmd_rsp = IIC_DATA_NAK_ADDR;
-				}else if(ret) {
-					cmd_rsp = IIC_DATA_NAK_READ;
-				}else {
-					len_rsp = rlen;
-				}
-			}else {
-				cmd_rsp = IIC_DATA_FINISHED_WITHOUT_R;
-			}
-		}
+        //read
+        if (ret == ERR_NONE) {
+            if (rlen) {
+                ret = iic_read(&hc->iic, rdata, rlen);
+                if (ret == ERR_BAD_ADDRESS) {
+                    cmd_rsp = IIC_DATA_NAK_ADDR;
+                }else if(ret) {
+                    cmd_rsp = IIC_DATA_NAK_READ;
+                }else {
+                    len_rsp = rlen;
+                }
+            }else {
+                cmd_rsp = IIC_DATA_FINISHED_WITHOUT_R;
+            }
+        }
 
-		if (ret == ERR_NONE)
-			break;
-		retry--;
-		//TBD: here need a retry delay
+        if (ret == ERR_NONE)
+            break;
+        retry--;
+        //TBD: here need a retry delay
 
-	}while(ret != ERR_NONE && retry > 0);
+    }while(ret != ERR_NONE && retry > 0);
 
-	if (ecode)
-		*ecode = cmd_rsp;
+    if (ecode)
+        *ecode = cmd_rsp;
 
-	return len_rsp;
+    return len_rsp;
+}
+
+uint8_t i2c_ping(void *host, uint8_t addr)
+{
+    controller_t *hc = (controller_t *)host;
+    int32_t ret;
+
+    uint8_t rdata[1];
+
+    iic_set_address(&hc->iic, addr);
+
+    ret = iic_read(&hc->iic, rdata, sizeof(rdata));
+    if (ret == ERR_NONE) {
+        return addr;
+    }
+
+    return 0;
 }
