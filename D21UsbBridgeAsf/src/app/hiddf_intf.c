@@ -19,7 +19,14 @@
 static controller_t g_host_controller;
 
 extern int32_t enpack_response_nak(response_data_t *resp);
-void hiddf_intf_receive(uint8_t *data, uint32_t size)
+
+/*
+    HID host send data through OUT token, bridge will execute the command. If there is repeat command, call check function at SOF
+    @data: data buffer pointer
+    @size: data buffer size
+    return none
+*/
+void hiddf_intf_receive(const uint8_t *data, uint32_t size)
 {
     controller_t *hc = &g_host_controller;
     response_data_t *resp = &hc->response;
@@ -38,13 +45,18 @@ void hiddf_intf_receive(uint8_t *data, uint32_t size)
         result = d21_parse_command(hc, data, size);
     }
 
-    if (result != ERR_NONE){
+    if (result != ERR_NONE) {
         enpack_response_nak(resp);
     }
 }
 
-extern int32_t transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
-int32_t hiddf_intf_get_data(void **buf_ptr, uint32_t *buf_ptr_size)
+/*
+    Get current data buffer
+    @buf_ptr: output buffer pointer
+    @buf_ptr_size: output buffer valid data size
+    return ERR_NONE success, otherwise failed code
+*/
+int32_t hid_get_buffer(void **buf_ptr, uint32_t *buf_ptr_size)
 {
     controller_t *hc = &g_host_controller;
     response_data_t *resp = &hc->response;
@@ -56,16 +68,16 @@ int32_t hiddf_intf_get_data(void **buf_ptr, uint32_t *buf_ptr_size)
     uint32_t count;
 
     if (!resp->dirty) {
-        if (TEST_BIT(hc->flag, BIT_BULK_CMD_READ_CONTINUE)) {
+        if (TEST_BIT(hc->flag, BIT_BULK_CMD_READ_CONTINUE)) {   // Bulk mode hasn't completed
             hiddf_intf_receive(ccache->data, sizeof(ccache->data));
-        }else if (TEST_BIT(hc->flag, BIT_AUTO_REPEAT)) {
+        }else if (TEST_BIT(hc->flag, BIT_AUTO_REPEAT)) {    // Auto repeat the command
             if (u5030_chg_line_active(hc)) {
                 if (scfg->dym.repeat.cfg.bits.bus == REPEAT_BUS_SPI_UART) {
                         ;//TODO
                 }else if (scfg->dym.repeat.cfg.bits.bus == REPEAT_BUS_IIC1) {
                     data = (uint8_t *)&scfg->dym.repeat.lenw;
                     count = scfg->dym.repeat.lenw + 2;
-                    transfer_bridge_data(hc, CMD_AUTO_REPEAT_RESP, data, count);
+                    u5030_transfer_bridge_data(hc, CMD_AUTO_REPEAT_RESP, data, count);
                 }else if (scfg->dym.repeat.cfg.bits.bus == REPEAT_BUS_IIC2) {
                     //TODO
                 }
@@ -86,29 +98,35 @@ int32_t hiddf_intf_get_data(void **buf_ptr, uint32_t *buf_ptr_size)
     return -ERR_NOT_READY;
 }
 
-int32_t hiddf_intf_clear_cache(void)
+/*
+    Clear response data buffer
+    return none
+*/
+void hid_clear_cache(void)
 {
     controller_t *hc = &g_host_controller;
     response_data_t *resp = &hc->response;
     
     resp->dirty = false;
     memset(&resp->rcache, 0, sizeof(resp->rcache));
-    
-    return ERR_NONE;
 }
 
+/*
+    Send local data to USB host through IN Token, this function called by each USB SOF Frame
+    @cb_send: callback for send function, the data is store by local buffer
+    return none
+*/
 void hiddf_intf_send(cb_hiddf_func_data_send cb_send)
 {
     uint8_t *buf;
     uint32_t count;
     int32_t ret;
     
-    ret = hiddf_intf_get_data((void **)&buf, &count);
+    ret = hid_get_buffer((void **)&buf, &count);
     if (ret == ERR_NONE) {
-        cb_send(buf);
-        if (ret != ERR_NONE)
-          ; //TODO: should do something
-        hiddf_intf_clear_cache();
+        if (cb_send(buf)) {
+			hid_clear_cache();	
+		}
     }
 
     if (ret != ERR_NONE){

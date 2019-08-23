@@ -1133,7 +1133,8 @@ typedef struct {
 
 int32_t u5030_parse_command(void *host, const uint8_t *data, uint32_t count);
 bool u5030_chg_line_active(void *host);
-int32_t set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
+int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
+int32_t u5030_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
 int32_t u5030_init(void);
 void u5030_deinit(void);
 

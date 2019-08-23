@@ -36,12 +36,11 @@ static int32_t send_bridge_data_bulk(void *host, uint8_t cmd, uint8_t bcmd, cons
     transfer_data_t * trans = &hc->transfer;
     uint8_t * cdata = trans->ccache.data;
     uint32_t size = sizeof(resp->rcache);
-    uint32_t addr, lenr, read_size, read_size_max;
+    uint16_t addr, lenr, read_size, read_size_max, len_rsp = 0;
     uint8_t cmd_rsp = OBP_DATA4_BULK_TRANSFER_COMPLETED;
-    uint8_t len_rsp;
+    int32_t i, retry = scfg->base.data2.bits.iic_retry ? 3 : 0;
     int32_t ret;
-    int32_t retry = scfg->base.data2.bits.iic_retry ? 3 : 0;
-
+	
     if (count < 7)
         return -ERR_INVALID_DATA;
 
@@ -51,7 +50,7 @@ static int32_t send_bridge_data_bulk(void *host, uint8_t cmd, uint8_t bcmd, cons
 
     //Need initialize bus before transfer data
     if (TEST_BIT(hc->flag, BIT_BUS_REINIT) || !TEST_BIT(hc->flag, BIT_BUS_INITED)) {
-        ret = set_bridge_ext_config(hc, CMD_EXTENSION_CONFIG, (uint8_t *)&scfg->ext, sizeof(scfg->ext));
+        ret = u5030_set_bridge_ext_config(hc, CMD_EXTENSION_CONFIG, (uint8_t *)&scfg->ext, sizeof(scfg->ext));
         if (ret != ERR_NONE)
             return ret;
     }
@@ -61,23 +60,27 @@ static int32_t send_bridge_data_bulk(void *host, uint8_t cmd, uint8_t bcmd, cons
         lenr = read_size_max;    //count may max than buffer size
     else
         lenr = read_size;
-    len_rsp = trans->xfer(host, &data[5], 2, rdata + 5, lenr, &cmd_rsp, retry);
-    if (cmd_rsp == IIC_DATA_OK) {
-        read_size -= len_rsp;
-        addr += len_rsp;
-        if (read_size > 0) {
-            SET_BIT(hc->flag, BIT_BULK_CMD_READ_CONTINUE);
-            cdata[0] = cmd;
-            cdata[1] = bcmd;
-            cdata[2] = read_size & 0xff;
-            cdata[3] = (read_size >> 8) & 0xff;
-            cdata[4] = data[2];
-            cdata[5] = data[3];
-            cdata[6] = data[4];
-            cdata[7] = addr & 0xff;
-            cdata[8] = (addr >> 8) & 0xff;
-        }else {
-            cmd_rsp = OBP_DATA4_BULK_TRANSFER_COMPLETED;
+    
+    for (i = 0; i < retry; i++ ) {
+        ret = trans->xfer(host, (const uint8_t *)&addr, sizeof(addr), rdata + 5, lenr, &len_rsp, &cmd_rsp);
+        if (ret == ERR_NONE) {
+            read_size -= len_rsp;
+            addr += len_rsp;
+            if (read_size > 0) {    //Not finished, put command into command cache
+                SET_BIT(hc->flag, BIT_BULK_CMD_READ_CONTINUE);
+                cdata[0] = cmd;
+                cdata[1] = bcmd;
+                cdata[2] = read_size & 0xff;
+                cdata[3] = (read_size >> 8) & 0xff;
+                cdata[4] = data[2];
+                cdata[5] = data[3];
+                cdata[6] = data[4];
+                cdata[7] = addr & 0xff;
+                cdata[8] = (addr >> 8) & 0xff;
+            }else {
+                cmd_rsp = OBP_DATA4_BULK_TRANSFER_COMPLETED;
+            }
+            break;
         }
     }
 

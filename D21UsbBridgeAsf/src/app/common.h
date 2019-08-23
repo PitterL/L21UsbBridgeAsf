@@ -25,7 +25,7 @@ typedef struct response_data{
     bool dirty;
 }response_data_t;
 
-typedef uint8_t (*func_xfer)(void *host, const uint8_t *wdata, uint32_t wlen, uint8_t *rdata, uint32_t rlen, uint8_t *ecode, int32_t retry);
+typedef int32_t (*func_xfer)(void *host, const uint8_t *wdata, uint16_t wlen, uint8_t *rdata, uint16_t rlen, uint16_t *readlen, uint8_t *ecode);
 typedef uint8_t (*func_ping)(void *host, uint8_t addr);
 
 typedef struct transfer_data{
@@ -47,7 +47,7 @@ typedef struct {
 }controller_t;
 
 
-uint8_t i2c_transfer_data(void *host, const uint8_t *wdata, uint32_t wlen, uint8_t *rdata, uint32_t rlen, uint8_t *ecode, int32_t retry);
+int32_t i2c_transfer_data(void *host, const uint8_t *wdata, uint16_t wlen, uint8_t *rdata, uint16_t rlen, uint16_t *readlen, uint8_t *ecode);
 uint8_t i2c_ping(void *host, uint8_t addr);
 
 #endif

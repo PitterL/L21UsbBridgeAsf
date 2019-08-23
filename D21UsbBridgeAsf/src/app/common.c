@@ -15,13 +15,25 @@
 #include "external/utils.h"
 #include "external/err_codes.h"
 
-uint8_t i2c_transfer_data(void *host, const uint8_t *wdata, uint32_t wlen, uint8_t *rdata, uint32_t rlen, uint8_t *ecode, int32_t retry)
+/*
+    I2c bus transfer data
+    @host: device controller handle
+    @wdata: write buffer data pointer
+    @wlen: write data length
+    @rdata: read buffer data pointer
+    @rlen: raad buffer length
+    @readlen: readout data length output pointer
+    @ecode: bus status code
+    return error code: ERR_NONE mean successful, otherwist failed
+*/
+int32_t i2c_transfer_data(void *host, const uint8_t *wdata, uint16_t wlen, uint8_t *rdata, uint16_t rlen, uint16_t *readlen, uint8_t *ecode)
 {
     controller_t *hc = (controller_t *)host;
-    uint8_t cmd_rsp;
+    int8_t cmd_rsp;
     uint8_t len_rsp;
     int32_t ret;
-    
+    int retry = 0;
+
     do {
         cmd_rsp = IIC_DATA_OK;
         len_rsp = 0;
@@ -60,12 +72,20 @@ uint8_t i2c_transfer_data(void *host, const uint8_t *wdata, uint32_t wlen, uint8
 
     }while(ret != ERR_NONE && retry > 0);
 
+    if (readlen)
+        *readlen = len_rsp;
+
     if (ecode)
         *ecode = cmd_rsp;
 
-    return len_rsp;
+    return ret;
 }
 
+/*
+    Scan first i2c devices on bus
+    @host: device controller handle
+    return i2c device addr if get
+*/
 uint8_t i2c_ping(void *host, uint8_t addr)
 {
     controller_t *hc = (controller_t *)host;

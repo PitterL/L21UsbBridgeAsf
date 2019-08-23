@@ -40,7 +40,7 @@ static int32_t set_bridge_config(void *host, uint8_t cmd, const uint8_t *data, u
     return enpack_response(resp, cmd, data, cfg_size);
 }
 
-int32_t set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
+int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
 {
     controller_t *hc = (controller_t *)host;
     config_setting_t *scfg = &hc->setting;
@@ -101,7 +101,15 @@ int32_t set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data, uint
     return enpack_response(resp, cmd, data, count);
 }
 
-int32_t transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
+/*
+    Transfer bus data (read or write)
+    @host: device controller handle
+    @cmd: command from upper level(repeat or true command)
+    @data: data buffer
+    @count: data buffer size
+    @return ERR_NONE successful, other value if failed
+*/
+int32_t u5030_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
 {
     controller_t *hc = (controller_t *)host;
     config_setting_t * scfg = &hc->setting;
@@ -109,24 +117,22 @@ int32_t transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint3
     uint8_t *rdata = resp->rcache.data;
     transfer_data_t * trans = &hc->transfer;
     uint32_t size = sizeof(resp->rcache.data);
-    uint32_t lenw;
-    uint32_t lenr, read_size_max;
+    uint16_t lenw, lenr, read_size_max, len_rsp = 0;
     uint8_t cmd_rsp;
-    uint8_t len_rsp;
     int32_t ret;
-    int32_t retry = scfg->base.data2.bits.iic_retry ? 3 : 0;
+    int32_t i, retry = scfg->base.data2.bits.iic_retry ? 3 : 0;
 
     if (count < 2)
         return ERR_INVALID_DATA;
 
     lenw = data[0];
     lenr = data[1];
-    if (lenw + 2 > count)
+    if ((uint32_t)(lenw + 2) > count)
         return ERR_INVALID_DATA;
 
     //Need initialize bus before transfer data
     if (TEST_BIT(hc->flag, BIT_BUS_REINIT) || !TEST_BIT(hc->flag, BIT_BUS_INITED)) {
-        ret = set_bridge_ext_config(hc, CMD_EXTENSION_CONFIG, (uint8_t *)&scfg->ext, sizeof(scfg->ext));
+        ret = u5030_set_bridge_ext_config(hc, CMD_EXTENSION_CONFIG, (uint8_t *)&scfg->ext, sizeof(scfg->ext));
         if (ret != ERR_NONE)
             return ret;
     }
@@ -135,17 +141,22 @@ int32_t transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint3
     if (lenr > read_size_max)
         lenr = read_size_max;    //count may max than buffer size
 
-    len_rsp = trans->xfer(host, data + 2, lenw, rdata + 2, lenr, &cmd_rsp, retry);
-    if (cmd == CMD_AUTO_REPEAT_RESP) {
-        rdata[0] = cmd;
-        rdata[1] = cmd_rsp;
-    }else {
-        rdata[0] = cmd_rsp;
-        rdata[1] = len_rsp;
+    for ( i = 0; i < retry; i++ ) {
+        ret = trans->xfer(host, data + 2, lenw, rdata + 2, lenr, &len_rsp, &cmd_rsp);
+        if (ret == ERR_NONE) {
+            if (cmd == CMD_AUTO_REPEAT_RESP) {
+                rdata[0] = cmd;
+                rdata[1] = cmd_rsp;
+            }else {
+                rdata[0] = cmd_rsp;
+                rdata[1] = len_rsp;
+            }
+            resp->dirty = true;
+            break;
+        }
     }
-    resp->dirty = true;
 
-    return ERR_NONE;
+    return ret;
 }
 
 static int32_t set_bridge_auto_repeat(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
@@ -390,7 +401,7 @@ static struct cmd_func_map u5030_command_func_map_list[] = {
     {CMD_GET_IO_F, NULL},
     {CMD_FIND_IIC_ADDRESS, find_i2c_address},
     {CMD_SPI_UART_DATA, NULL},
-    {CMD_IIC_DATA_1, transfer_bridge_data},
+    {CMD_IIC_DATA_1, u5030_transfer_bridge_data},
     {CMD_IIC_DATA_2, NULL},
     {CMD_REPEAT, set_bridge_auto_repeat},
     {CMD_REPEAT_STACK, NULL},
@@ -412,7 +423,7 @@ static struct cmd_func_map u5030_command_func_map_list[] = {
 
     //Extension command
     {CMD_NAK, NULL},
-    {CMD_EXTENSION_CONFIG, set_bridge_ext_config},
+    {CMD_EXTENSION_CONFIG, u5030_set_bridge_ext_config},
     {CMD_SET_GPIO_EXT, set_bridge_gpio_ext},
 }; 
 
