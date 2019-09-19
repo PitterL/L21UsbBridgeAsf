@@ -36,9 +36,10 @@
           <option id="common.services.basic.sleepmgr" value="Add" config="" content-id="Atmel.ASF" />
           <option id="common.services.usb.class.device" value="Add" config="composite" content-id="Atmel.ASF" />
           <option id="sam0.drivers.port" value="Add" config="" content-id="Atmel.ASF" />
+          <option id="sam0.drivers.sercom.i2c.master" value="Add" config="callback" content-id="Atmel.ASF" />
           <option id="sam0.drivers.sercom.usart" value="Add" config="callback" content-id="Atmel.ASF" />
           <option id="sam0.drivers.system" value="Add" config="" content-id="Atmel.ASF" />
-          <option id="sam0.drivers.sercom.i2c.master" value="Add" config="callback" content-id="Atmel.ASF" />
+          <option id="common2.services.delay" value="Add" config="systick" content-id="Atmel.ASF" />
           <option id="common.services.usb.class.composite.device.example.hids_cdc_msc" value="Add" config="" content-id="Atmel.ASF" />
           <option id="common.utils" value="Add" config="" content-id="Atmel.ASF" />
           <option id="sam0.utils.cmsis.saml21.source.template" value="Add" config="" content-id="Atmel.ASF" />
@@ -279,6 +280,9 @@
           <file path="src/ASF/sam0/drivers/sercom/i2c/quick_start_master_dma/qs_i2c_master_dma.h" framework="" version="3.40.0" source="sam0\drivers\sercom\i2c\quick_start_master_dma\qs_i2c_master_dma.h" changed="False" content-id="Atmel.ASF" />
           <file path="src/ASF/sam0/drivers/sercom/i2c/i2c_sam0/i2c_master.c" framework="" version="3.40.0" source="sam0\drivers\sercom\i2c\i2c_sam0\i2c_master.c" changed="False" content-id="Atmel.ASF" />
           <file path="src/ASF/sam0/drivers/sercom/i2c/i2c_sam0/i2c_master_interrupt.c" framework="" version="3.40.0" source="sam0\drivers\sercom\i2c\i2c_sam0\i2c_master_interrupt.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common2/services/delay/sam0/systick_counter.c" framework="" version="3.40.0" source="common2\services\delay\sam0\systick_counter.c" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common2/services/delay/delay.h" framework="" version="3.40.0" source="common2\services\delay\delay.h" changed="False" content-id="Atmel.ASF" />
+          <file path="src/ASF/common2/services/delay/sam0/systick_counter.h" framework="" version="3.40.0" source="common2\services\delay\sam0\systick_counter.h" changed="False" content-id="Atmel.ASF" />
         </files>
         <documentation help="http://asf.atmel.com/docs/3.40.0/common.services.usb.class.composite.device.example.hids_cdc_msc.saml21_xplained_pro_b/html/index.html" />
         <offline-documentation help="" />
@@ -311,6 +315,7 @@
       <Value>USB_DEVICE_LPM_SUPPORT</Value>
       <Value>ACCESS_USB_ENABLED</Value>
       <Value>I2C_MASTER_CALLBACK_MODE=true</Value>
+      <Value>SYSTICK_MODE</Value>
     </ListValues>
   </armgcc.compiler.symbols.DefSymbols>
   <armgcc.compiler.directories.IncludePaths>
@@ -362,6 +367,8 @@
       <Value>../src/ASF/sam0/drivers/sercom/i2c</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c/i2c_sam0</Value>
       <Value>../src/ASF/common/services/usb/class/hid/device/generic</Value>
+      <Value>../src/ASF/common2/services/delay</Value>
+      <Value>../src/ASF/common2/services/delay/sam0</Value>
     </ListValues>
   </armgcc.compiler.directories.IncludePaths>
   <armgcc.compiler.optimization.level>Optimize for size (-Os)</armgcc.compiler.optimization.level>
@@ -432,9 +439,11 @@
       <Value>../src/config</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c/i2c_sam0</Value>
+      <Value>../src/ASF/common2/services/delay</Value>
+      <Value>../src/ASF/common2/services/delay/sam0</Value>
     </ListValues>
   </armgcc.assembler.general.IncludePaths>
-  <armgcc.preprocessingassembler.general.AssemblerFlags>-DACCESS_USB_ENABLED -DARM_MATH_CM0PLUS=true -DBOARD=SAML21_XPLAINED_PRO -DEXTINT_CALLBACK_MODE=true -DUDD_ENABLE -DUSART_CALLBACK_MODE=true -DUSB_DEVICE_LPM_SUPPORT -DVIRTUAL_MEMORY_ENABLE -D__SAML21J18B__ -DI2C_MASTER_CALLBACK_MODE=true</armgcc.preprocessingassembler.general.AssemblerFlags>
+  <armgcc.preprocessingassembler.general.AssemblerFlags>-DACCESS_USB_ENABLED -DARM_MATH_CM0PLUS=true -DBOARD=SAML21_XPLAINED_PRO -DEXTINT_CALLBACK_MODE=true -DUDD_ENABLE -DUSART_CALLBACK_MODE=true -DUSB_DEVICE_LPM_SUPPORT -DVIRTUAL_MEMORY_ENABLE -D__SAML21J18B__ -DI2C_MASTER_CALLBACK_MODE=true -DSYSTICK_MODE</armgcc.preprocessingassembler.general.AssemblerFlags>
   <armgcc.preprocessingassembler.general.IncludePaths>
     <ListValues>
       <Value>../src/ASF/common/components/memory/virtual_mem</Value>
@@ -483,6 +492,8 @@
       <Value>../src/config</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c/i2c_sam0</Value>
+      <Value>../src/ASF/common2/services/delay</Value>
+      <Value>../src/ASF/common2/services/delay/sam0</Value>
     </ListValues>
   </armgcc.preprocessingassembler.general.IncludePaths>
 </ArmGcc>
@@ -510,6 +521,7 @@
       <Value>ACCESS_USB_ENABLED</Value>
       <Value>I2C_MASTER_CALLBACK_MODE=true</Value>
       <Value>BOARD=USER_BOARD</Value>
+      <Value>SYSTICK_MODE</Value>
     </ListValues>
   </armgcc.compiler.symbols.DefSymbols>
   <armgcc.compiler.directories.IncludePaths>
@@ -561,6 +573,8 @@
       <Value>../src/ASF/common/services/usb/class/hid/device/generic</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c/i2c_sam0</Value>
+      <Value>../src/ASF/common2/services/delay</Value>
+      <Value>../src/ASF/common2/services/delay/sam0</Value>
     </ListValues>
   </armgcc.compiler.directories.IncludePaths>
   <armgcc.compiler.optimization.OtherFlags>-fdata-sections</armgcc.compiler.optimization.OtherFlags>
@@ -631,10 +645,12 @@
       <Value>../src/config</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c/i2c_sam0</Value>
+      <Value>../src/ASF/common2/services/delay</Value>
+      <Value>../src/ASF/common2/services/delay/sam0</Value>
     </ListValues>
   </armgcc.assembler.general.IncludePaths>
   <armgcc.assembler.debugging.DebugLevel>Default (-g)</armgcc.assembler.debugging.DebugLevel>
-  <armgcc.preprocessingassembler.general.AssemblerFlags>-DACCESS_USB_ENABLED -DARM_MATH_CM0PLUS=true -DBOARD=SAML21_XPLAINED_PRO -DEXTINT_CALLBACK_MODE=true -DUDD_ENABLE -DUSART_CALLBACK_MODE=true -DUSB_DEVICE_LPM_SUPPORT -DVIRTUAL_MEMORY_ENABLE -D__SAML21J18B__ -DI2C_MASTER_CALLBACK_MODE=true</armgcc.preprocessingassembler.general.AssemblerFlags>
+  <armgcc.preprocessingassembler.general.AssemblerFlags>-DACCESS_USB_ENABLED -DARM_MATH_CM0PLUS=true -DBOARD=SAML21_XPLAINED_PRO -DEXTINT_CALLBACK_MODE=true -DUDD_ENABLE -DUSART_CALLBACK_MODE=true -DUSB_DEVICE_LPM_SUPPORT -DVIRTUAL_MEMORY_ENABLE -D__SAML21J18B__ -DI2C_MASTER_CALLBACK_MODE=true -DSYSTICK_MODE</armgcc.preprocessingassembler.general.AssemblerFlags>
   <armgcc.preprocessingassembler.general.IncludePaths>
     <ListValues>
       <Value>../src/ASF/common/components/memory/virtual_mem</Value>
@@ -683,6 +699,8 @@
       <Value>../src/config</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c</Value>
       <Value>../src/ASF/sam0/drivers/sercom/i2c/i2c_sam0</Value>
+      <Value>../src/ASF/common2/services/delay</Value>
+      <Value>../src/ASF/common2/services/delay/sam0</Value>
     </ListValues>
   </armgcc.preprocessingassembler.general.IncludePaths>
   <armgcc.preprocessingassembler.debugging.DebugLevel>Default (-Wa,-g)</armgcc.preprocessingassembler.debugging.DebugLevel>
@@ -693,6 +711,10 @@
     <Folder Include="src\" />
     <Folder Include="src\app\" />
     <Folder Include="src\ASF\" />
+    <Folder Include="src\ASF\common2\" />
+    <Folder Include="src\ASF\common2\services\" />
+    <Folder Include="src\ASF\common2\services\delay\" />
+    <Folder Include="src\ASF\common2\services\delay\sam0\" />
     <Folder Include="src\ASF\common\" />
     <Folder Include="src\ASF\common\boards\" />
     <Folder Include="src\ASF\common\components\" />
@@ -718,6 +740,7 @@
     <Folder Include="src\ASF\common\services\usb\class\hid\device\generic\" />
     <Folder Include="src\ASF\common\services\usb\class\hid\device\generic\example\" />
     <Folder Include="src\ASF\common\services\usb\class\hid\device\generic\example\saml21j18b_saml21_xplained_pro\" />
+    <Folder Include="src\ASF\common\services\usb\class\hid\device\mouse\" />
     <Folder Include="src\ASF\common\services\usb\class\msc\" />
     <Folder Include="src\ASF\common\services\usb\class\msc\device\" />
     <Folder Include="src\ASF\common\services\usb\udc\" />
@@ -780,12 +803,31 @@
     <Folder Include="src\ASF\thirdparty\CMSIS\Lib\GCC\" />
     <Folder Include="src\board\" />
     <Folder Include="src\config\" />
+    <Folder Include="src\external\" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="src\app\common.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\common.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\app\crc.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\app\crc.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\d21_protocol.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\d21_protocol.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\hiddf_intf.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\hiddf_intf.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\app\u5030_protocol.c">
@@ -794,6 +836,15 @@
     <Compile Include="src\app\u5030_protocol.h">
       <SubType>compile</SubType>
     </Compile>
+    <None Include="src\ASF\common2\services\delay\delay.h">
+      <SubType>compile</SubType>
+    </None>
+    <Compile Include="src\ASF\common2\services\delay\sam0\systick_counter.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <None Include="src\ASF\common2\services\delay\sam0\systick_counter.h">
+      <SubType>compile</SubType>
+    </None>
     <Compile Include="src\ASF\common\boards\user_board.h">
       <SubType>compile</SubType>
     </Compile>
@@ -807,6 +858,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ASF\common\services\usb\class\hid\device\generic\udi_hid_generic_conf.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\ASF\common\services\usb\class\hid\device\mouse\udi_hid_mouse.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\ASF\common\services\usb\class\hid\device\mouse\udi_hid_mouse.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\ASF\sam0\drivers\sercom\i2c\i2c_sam0\i2c_master.c">
@@ -1442,6 +1499,12 @@
     <Compile Include="src\board\board.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\board\board_clock.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\board\board_clock.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\board\board_gpio.c">
       <SubType>compile</SubType>
     </Compile>
@@ -1455,6 +1518,12 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\board\ui.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\external\err_codes.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\external\utils.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\main.c">

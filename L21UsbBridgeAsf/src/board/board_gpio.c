@@ -1,6 +1,7 @@
 #include <compiler.h>
 #include <board.h>
 #include <conf_board.h>
+#include <delay.h>
 
 #include "board_gpio.h"
 #include "external/utils.h"
@@ -20,67 +21,67 @@ struct pin_config{
 static struct pin_config g_board_pins_list[] = 
 {
     //USB_ID
-    {PIN_PA02, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_UP, false}},
+    {PIN_PA02, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_UP}, false},
 
     //GP_TP2
-    {PIN_PA08, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA08, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_UP}, false},
 
     //GP_IO0
-    {PIN_PB10, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_UP, false}},
+    {PIN_PB10, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_UP}, false},
 
     //GP_IO1
-    {PIN_PB11, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PB11, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_IO2
-    {PIN_PB12, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PB12, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_RST
-    {PIN_PB13, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, true}},
+    {PIN_PB13, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_CHG
-    {PIN_PB14, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_UP, false}},
+    {PIN_PB14, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_UP}, false},
 
     //GP_TRANS_EN
-    {PIN_PB15, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PB15, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_IO3
-    {PIN_PA12, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA12, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_IO4
-    {PIN_PA13, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA13, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_VBUS_EXIST
-    {PIN_PA14, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA14, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_WIFI_WAKE
-    {PIN_PA15, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA15, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_IO5
-    {PIN_PA18, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA18, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_VDD33_EN
-    {PIN_PA19, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA19, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, true},
 
     //GP_IO_BTLD
-    {PIN_PA20, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA20, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_VDD5_EN
-    {PIN_PA21, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA21, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_IO_PWR
-    {PIN_PA22, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA22, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_IO_LED2_EN
-    {PIN_PA23, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA23, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, true},
 
     //GP_WIFI_EN
-    {PIN_PA27, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PA27, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_WIFI_RST
-    {PIN_PA30, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    {PIN_PB30, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, true},
 
-    //GP_WIFI_RST
-    {PIN_PA31, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE, false}},
+    //GP_VDDIO_EN
+    {PIN_PB31, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, true},
 };
 
 struct mux_config {
@@ -113,7 +114,8 @@ void board_gpio_init(void)
     const struct mux_config *mux_cfg;
     struct system_pinmux_config port_conf;
     uint32_t i;
-	
+	bool en;
+
     for(i = 0; i < ARRAY_SIZE(g_board_pins_list); i++) {
         pin_cfg = &g_board_pins_list[i];
 
@@ -131,5 +133,65 @@ void board_gpio_init(void)
         port_conf.powersave = mux_cfg->powersave;
 
         system_pinmux_pin_set_config(mux_cfg->pad >> 16, &port_conf);
+    }
+
+    //por_on(false);
+
+    en = pwr_switch_on();
+    por_on(en);
+}
+
+bool pwr_switch_on(void)
+{
+    return port_pin_get_input_level(GP_IO_PWR) == false;
+}
+
+void pwr_5v_en(bool en)
+{
+    port_pin_set_output_level(GP_VDD5_EN, en);
+}
+
+void pwr_3v3_en(bool en)
+{
+    port_pin_set_output_level(GP_VDD33_EN, !en);
+}
+
+void pwr_vio_en(bool en)
+{
+    port_pin_set_output_level(GP_VDDIO_EN, !en);
+}
+
+void io_trans_en(bool en)
+{
+    port_pin_set_output_level(GP_TRANS_EN, en);
+}
+
+void io_rst_en(bool en)
+{
+    port_pin_set_output_level(GP_RST, en);
+}
+
+void por_on(bool en)
+{
+    if (en) {
+        //io_rst_en(true);  //In GPIO init, RST default value been set
+        io_trans_en(true);
+
+        pwr_vio_en(true);
+        pwr_3v3_en(true);
+        pwr_5v_en(true);
+        //here need a delay for at least 90ns
+        delay_ms(5);
+
+        io_rst_en(false);
+        //delay 150ms for reset finished, but i don't wanto wait so long
+        delay_ms(150);
+    }else{
+        pwr_5v_en(false);
+        pwr_3v3_en(false);
+        pwr_vio_en(false);
+        io_rst_en(true);
+
+        delay_ms(20);
     }
 }

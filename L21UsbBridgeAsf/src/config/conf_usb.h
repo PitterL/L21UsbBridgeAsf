@@ -141,10 +141,12 @@
  * USB Interface Configuration
  * @{
  */
+#define  USB_COMPOSITE_DEVICE_INTERFACE_START 0
+
 /* List all support device */
 #define USB_COMPOSITE_DEVICE_UDI_CDC_EN
 //#define USB_COMPOSITE_DEVICE_MSC_EN
-//#define USB_COMPOSITE_DEVICE_HID_MOUSE
+#define USB_COMPOSITE_DEVICE_HID_MOUSE
 //#define USB_COMPOSITE_DEVICE_HID_KBD
 #define USB_COMPOSITE_DEVICE_HID_GENERIC_EN
 
@@ -344,7 +346,8 @@
 
 //! Interface number
 //#define  UDI_HID_GENERIC_IFACE_NUMBER    5
-#define  UDI_HID_GENERIC_IFACE_NUMBER          (USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END + 0)//5
+//Note For MTA compatible, please don't use interface 0 and 2 for Bridge HID
+#define  UDI_HID_GENERIC_IFACE_NUMBER          (USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END + 0) //5
 #define  USB_COMPOSITE_DEVICE_HID_GENERIC_NUM_END (UDI_HID_GENERIC_IFACE_NUMBER + 1)
 //@}
 #else
@@ -360,7 +363,6 @@
  * Description of Composite Device
  * @{
  */
-#define  USB_COMPOSITE_DEVICE_INTERFACE_START 0
 #define  USB_COMPOSITE_DEVICE_INTERFACE_NUM USB_COMPOSITE_DEVICE_HID_GENERIC_NUM_END
 
 //! USB Interfaces descriptor structure
@@ -414,11 +416,21 @@
 //@}
 
 //! The includes of classes and other headers must be done at the end of this file to avoid compile error
+#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
 #include "udi_cdc.h"
+#endif
+#ifdef USB_COMPOSITE_DEVICE_MSC_EN
 #include "udi_msc.h"
+#endif
+#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 #include "udi_hid_mouse.h"
+#endif
+#ifdef USB_COMPOSITE_DEVICE_HID_KBD
 #include "udi_hid_kbd.h"
+#endif
+#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
 #include "udi_hid_generic.h"
+#endif
 #include "uart.h"
 #include "main.h"
 #include "ui.h"

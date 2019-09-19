@@ -39,7 +39,7 @@
 #include "conf_usb.h"
 #include "ui.h"
 #include "uart.h"
-#include "app/u5030_protocol.h"
+#include "app/hiddf_intf.h"
 #include "external/err_codes.h"
 
 static volatile bool main_b_generic_enable = false;
@@ -250,39 +250,30 @@ bool main_generic_enable(void)
 {
 	main_b_generic_enable = true;
 	
-	u5030_init();
+	hiddf_intf_init();
 
 	return true;
 }
 
 void main_generic_disable(void)
 {
-	u5030_deinit();
+	hiddf_intf_deinit();
 	main_b_generic_enable = false;
 }
-
+/*
+  Receive the data from Host
+*/
 void main_generic_reportout(uint8_t *ptr)
 {
-	u5030_process_data(ptr, UDI_HID_REPORT_OUT_SIZE);
+	hiddf_intf_receive(ptr, UDI_HID_REPORT_OUT_SIZE);
 }
 
+/*
+  In SOF frame, we prepare the data to send to Host
+*/
 void main_generic_sof(void)
 {
-	uint8_t *buf;
-	uint32_t count;
-	int32_t ret;
-	
-	ret = u5030_get_response((void **)&buf, &count);
-	if (ret == ERR_NONE) {
-		udi_hid_generic_send_report_in(buf);
-		if (ret != ERR_NONE)
-			; //TODO: should do something
-		u5030_clear_cache();
-	}
-
-	if (ret != ERR_NONE){
-		;  //TODO: how to handle error
-	}
+	hiddf_intf_send(udi_hid_generic_send_report_in);
 }
 
 void main_hid_set_feature(uint8_t* report)
