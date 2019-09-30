@@ -35,11 +35,14 @@ void hiddf_intf_receive(const uint8_t *data, uint32_t size)
     if (size < 1)
         return;
 
-    //clear auto repeat tag
-    CLR_BIT(hc->flag, BIT_AUTO_REPEAT);
     //clear continue to send tag
     CLR_BIT(hc->flag, BIT_BULK_CMD_READ_CONTINUE);
-
+	
+    //clear auto repeat tag
+	if (u5030_check_auto_repeat_avaliable(hc, data, size)) {
+		CLR_BIT(hc->flag, BIT_AUTO_REPEAT);
+	}
+	
     result = u5030_parse_command(hc, data, size);
     if (result == ERR_NOT_FOUND) {
         result = d21_parse_command(hc, data, size);

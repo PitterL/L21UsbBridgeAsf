@@ -491,6 +491,25 @@ int32_t u5030_parse_command(void *host, const uint8_t *data, uint32_t count)
     return result;
 }
 
+int32_t u5030_check_auto_repeat_avaliable(void *host, const uint8_t *data, uint32_t count)
+{
+    uint8_t cmd;
+    int32_t result = ERR_INVALID_DATA;
+    
+    if (count < 1)
+        return result;
+    
+    cmd = data[0];
+	switch(cmd) {
+		case CMD_NULL:
+			;
+		default:
+			result = ERR_NONE;
+	}
+	
+	return result;
+}
+
 bool u5030_chg_line_active(void *host)
 {
     controller_t *hc = (controller_t *)host;
