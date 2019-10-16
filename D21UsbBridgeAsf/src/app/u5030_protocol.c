@@ -502,7 +502,7 @@ int32_t u5030_check_auto_repeat_avaliable(void *host, const uint8_t *data, uint3
     cmd = data[0];
 	switch(cmd) {
 		case CMD_NULL:
-			;
+			break;
 		default:
 			result = ERR_NONE;
 	}
