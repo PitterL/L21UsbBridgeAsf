@@ -71,21 +71,21 @@ Response ID Data 1 Data 2 Data 3 ... Data 63
             1 = on (half duplex)
             0 = off (full duplex)
         use_drdy: Bit 6
-        Use DRDY pin for SPI / UART Comms
+        Use DRDY pin for SPI / UART Comm
             0 = off Ignore DRDY Pin
             1 = on Wait for DRDY high / 100ms timeout
         iic_clk: Bit5:4
-        Clock rate for IIC Comms
+        Clock rate for IIC Comm
             00 = 50kHz
             01 = 100kHz
             10 = 200kHz
             11 = 400kHz
         ss_pulse: Bit 3
-        Pulse SS pin before SPI / UART Comms
+        Pulse SS pin before SPI / UART Comm
             0 = off
             1 = on
         Generates a 20us low pulse on SS, then delays for 1ms
-        before starting comms
+        before starting Comm
         spi_clk: Bits2:0
             0 = 25kHz
             1 = 50kHz
@@ -99,7 +99,7 @@ Response ID Data 1 Data 2 Data 3 ... Data 63
 */
 union config_data1{
     struct {
-        uint8_t spi_clk: 2;
+        uint8_t spi_clk: 3;
         uint8_t ss_pulse: 1;
         uint8_t iic_clk: 2;
         uint8_t use_drdy: 1;

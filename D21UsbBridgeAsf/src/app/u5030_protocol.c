@@ -12,7 +12,7 @@
 //#include "../driver_init.h"
 #include "crc.h"
 #include "board/board.h"
-#include "common.h"
+#include "bus.h"
 #include "external/utils.h"
 #include "external/err_codes.h"
 
@@ -28,10 +28,9 @@ static int32_t set_bridge_config(void *host, uint8_t cmd, const uint8_t *data, u
     cfg_size = Min(sizeof(scfg->base), count);
 
     if (cfg_size) {
-        memcpy(&scfg->base, data, cfg_size);
-    
-        if (TEST_BIT(hc->flag, BIT_BUS_INITED))
-            SET_BIT(hc->flag, BIT_BUS_REINIT);
+        if (memcmp(&scfg->base, data, cfg_size)) {
+            return u5030_set_bridge_ext_config(hc, cmd, data, cfg_size);            
+        }
     }
     
     //TBD: Bulk mode test command
@@ -44,13 +43,15 @@ int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data
 {
     controller_t *hc = (controller_t *)host;
     config_setting_t *scfg = &hc->setting;
-    transfer_data_t *trans = &hc->transfer;
     response_data_t *resp = &hc->response;    
     uint8_t checksum;
     uint8_t mode;
     uint32_t cfg_size = sizeof(scfg->ext);
     uint32_t baudrate;
+    uint8_t edata;
+    BUS_TYPE_T btype = BUS_I2C;
     bool isself = data == (uint8_t *)&scfg->ext;
+    int32_t ret;
 
     if (cfg_size > count)
         return ERR_INVALID_DATA;
@@ -58,17 +59,13 @@ int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data
     if (!isself)    { //here may be itself outside    
         checksum = DESC_GET(data[0], EXT_CONFIG_DATA1_COMMUNICATION_MODE_CHECKSUM);
         mode = DESC_GET(data[0], EXT_CONFIG_COMMUNICATION_MODE);
-        if (checksum + mode != 0xFF)
+        if (checksum && mode && (checksum + mode != 0xFF))
             return -ERR_INVALID_DATA;
 
         memcpy(&scfg->ext, data, cfg_size);
     }
 
     if (scfg->ext.data1.bits.com_mode == COM_MODE_IIC_ONLY) {
-        if(TEST_BIT(hc->flag, BIT_BUS_REINIT)) {
-            iic_bus_deinit(&hc->iic);
-        }
-
         switch(scfg->base.data1.bits.iic_clk) {
         case IIC_CLK_50KHZ:
             baudrate = 50;
@@ -80,21 +77,67 @@ int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data
             baudrate = 200;
             break;
         case IIC_CLK_400KHZ:
+        default:
             baudrate = 400;
+        }
+        
+        edata = scfg->base.data2.bits.iic1_addr;
+        btype = BUS_I2C;
+
+    } else if (scfg->ext.data1.bits.com_mode == COM_MODE_SPI_ONLY) {
+        switch(scfg->base.data1.bits.spi_clk) {
+        case SPI_CLK_25KHZ:
+            baudrate = 25000;
             break;
+        case SPI_CLK_50KHZ:
+            baudrate = 50000;
+            break;
+        case SPI_CLK_100KHZ:
+            baudrate = 100000;
+            break;
+        case SPI_CLK_200KHZ:
+            baudrate = 200000;
+            break;
+        case SPI_CLK_500KHZ:
+            baudrate = 500000;
+            break;
+        case SPI_CLK_1MHZ:
+            baudrate = 1000000;
+            break;
+        case SPI_CLK_2MHZ:
+            baudrate = 2000000;
+            break;
+        case SPI_CLK_4MHZ:
+        default:
+            baudrate = 4000000;
         }
 
-        trans->xfer = i2c_transfer_data;
-        trans->ping = i2c_ping;
-        iic_bus_init(&hc->iic, SERCOM1, baudrate, scfg->base.data2.bits.iic1_addr);
+        edata = scfg->base.data4.bits.spi_mode;
+        btype = BUS_SPI;
     }
-    
-    //TODO: Inlitialize UART
-    //TODO: Inlitialize SPI
 
-    //set re-init
-    SET_AND_CLR_BIT(hc->flag, BIT_BUS_INITED, BIT_BUS_REINIT);
-    
+    if (hc->intf && hc->intf->cb_deinit) {
+        if (TEST_BIT(hc->flag, BIT_BUS_INITED)) {
+            CLR_BIT(hc->flag, BIT_BUS_INITED);
+           hc->intf->cb_deinit(hc->intf->dbc);
+        }
+        bus_deinit(hc);
+    }
+
+    bus_init(hc, btype);
+    if (!hc->intf || !hc->intf->cb_init)
+        return ERR_NOT_FOUND;
+
+    ret = hc->intf->cb_init(hc->intf->dbc, hc->intf->sercom, baudrate, edata);
+    if (ret != ERR_NONE)
+        return ERR_NOT_INITIALIZED;
+
+    //clear re-init
+    //SET_AND_CLR_BIT(hc->flag, BIT_BUS_INITED, BIT_BUS_REINIT);
+        
+    //set init tag
+    SET_BIT(hc->flag, BIT_BUS_INITED);    
+
     if (isself)
         return ERR_NONE;
     
@@ -115,12 +158,15 @@ int32_t u5030_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data,
     config_setting_t * scfg = &hc->setting;
     response_data_t * resp = &hc->response;
     uint8_t *rdata = resp->rcache.data;
-    transfer_data_t * trans = &hc->transfer;
+    bus_interface_t * intf = hc->intf;
     uint32_t size = sizeof(resp->rcache.data);
     uint16_t lenw, lenr, read_size_max, len_rsp = 0;
     uint8_t cmd_rsp;
     int32_t ret;
     int32_t i, retry = scfg->base.data2.bits.iic_retry ? 3 : 0;
+
+    if (!intf || !intf->cb_xfer)
+        return ERR_NOT_READY;
 
     if (count < 2)
         return ERR_INVALID_DATA;
@@ -131,7 +177,7 @@ int32_t u5030_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data,
         return ERR_INVALID_DATA;
 
     //Need initialize bus before transfer data
-    if (TEST_BIT(hc->flag, BIT_BUS_REINIT) || !TEST_BIT(hc->flag, BIT_BUS_INITED)) {
+    if (!TEST_BIT(hc->flag, BIT_BUS_INITED)) {
         ret = u5030_set_bridge_ext_config(hc, CMD_EXTENSION_CONFIG, (uint8_t *)&scfg->ext, sizeof(scfg->ext));
         if (ret != ERR_NONE)
             return ret;
@@ -142,7 +188,7 @@ int32_t u5030_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data,
         lenr = read_size_max;    //count may max than buffer size
 
     for ( i = 0; i < retry; i++ ) {
-        ret = trans->xfer(host, data + 2, lenw, rdata + 2, lenr, &len_rsp, &cmd_rsp);
+        ret = intf->cb_xfer(intf->dbc, data + 2, lenw, rdata + 2, lenr, &len_rsp, &cmd_rsp);
         if (ret == ERR_NONE) {
             if (cmd == CMD_AUTO_REPEAT_RESP) {
                 rdata[0] = cmd;
@@ -358,15 +404,18 @@ static int32_t find_i2c_address(void *host, uint8_t cmd, const uint8_t *data, ui
 {
     controller_t *hc = (controller_t *)host;
     response_data_t *resp = &hc->response;
-    transfer_data_t * trans = &hc->transfer;
+    bus_interface_t * intf = hc->intf;
     uint8_t rdata[1] = { IIC_NO_DEVICE_FOUND };
 
     uint8_t addr_list[] = {0x4a, 0x4b, 0x4c, 0x4d};
     uint8_t i;
     uint8_t ret;
 
+    if (!intf || !intf->cb_ping)
+        return ERR_NOT_READY;
+
     for (i = 0 ; i < ARRAY_SIZE(addr_list); i++) {
-        ret = trans->ping(host, addr_list[i]);
+        ret = intf->cb_ping(intf->dbc, addr_list[i]);
         if (ret) {
             rdata[0] = ret;
             break;
@@ -400,7 +449,7 @@ static struct cmd_func_map u5030_command_func_map_list[] = {
     {CMD_SET_IO_F, NULL},
     {CMD_GET_IO_F, NULL},
     {CMD_FIND_IIC_ADDRESS, find_i2c_address},
-    {CMD_SPI_UART_DATA, NULL},
+    {CMD_SPI_UART_DATA, u5030_transfer_bridge_data},
     {CMD_IIC_DATA_1, u5030_transfer_bridge_data},
     {CMD_IIC_DATA_2, NULL},
     {CMD_REPEAT, set_bridge_auto_repeat},

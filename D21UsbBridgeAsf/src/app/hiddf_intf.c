@@ -11,7 +11,7 @@
 //#include "../driver_init.h"
 #include "crc.h"
 #include "board/board.h"
-#include "common.h"
+#include "bus.h"
 #include "external/utils.h"
 #include "external/err_codes.h"
 #include "hiddf_intf.h"
@@ -150,10 +150,12 @@ static void load_default_config(config_setting_t *scfg)
     memset(scfg, 0, sizeof(*scfg));
 
     scfg->base.data1.bits.iic_clk = IIC_CLK_400KHZ;
+    scfg->base.data1.bits.spi_clk = SPI_CLK_4MHZ;
     scfg->base.data2.bits.iic_retry = IIC_RETRY_ON;
     scfg->base.data2.bits.iic1_addr = 0x4A;
     scfg->base.data4.bits.iic_restart = IIC_RESTART_DISABLE;
     scfg->base.data4.bits.uart_brate = UART_BAUDRATE_115200;
+    scfg->base.data4.bits.spi_mode = SPI_MODE_3;
     scfg->base.data5.bits.comms_delay = 0;
     scfg->base.data6.bits.repeat_delay_multiplier = 10;
     scfg->base.data7.bits.iic_retry_delay = 200;
@@ -174,6 +176,9 @@ int32_t hiddf_intf_init(void)
     platform_board_init();
     load_default_config(&hc->setting);
 
+    // Initialize as I2C default
+    bus_init(hc, BUS_I2C);
+
     u5030_init();
     d21_init();
 
@@ -182,6 +187,10 @@ int32_t hiddf_intf_init(void)
 
 void hiddf_intf_deinit(void)
 {
+    controller_t *hc = &g_host_controller;
+
     d21_deinit();
-    u5030_deinit();    
+    u5030_deinit();   
+
+    bus_deinit(hc); 
 }

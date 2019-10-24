@@ -11,7 +11,7 @@
 //#include "../driver_init.h"
 #include "crc.h"
 #include "board/board.h"
-#include "common.h"
+#include "bus.h"
 #include "external/utils.h"
 #include "external/err_codes.h"
 
@@ -35,14 +35,18 @@ static int32_t send_bridge_data_bulk(void *host, uint8_t cmd, uint8_t bcmd, cons
     uint8_t *rdata = resp->rcache.data;
     transfer_data_t * trans = &hc->transfer;
     uint8_t * cdata = trans->ccache.data;
+    bus_interface_t * intf = hc->intf;
     uint32_t size = sizeof(resp->rcache);
     uint16_t addr, lenr, read_size, read_size_max, len_rsp = 0;
     uint8_t cmd_rsp = OBP_DATA4_BULK_TRANSFER_COMPLETED;
     int32_t i, retry = scfg->base.data2.bits.iic_retry ? 3 : 0;
     int32_t ret;
 	
+    if (!intf || !intf->cb_xfer)
+        return ERR_NOT_READY;
+
     if (count < 7)
-        return -ERR_INVALID_DATA;
+        return ERR_INVALID_DATA;
 
     read_size = data[0] | (data[1] << 8);
     //data[2~4]: reserved 
@@ -62,7 +66,7 @@ static int32_t send_bridge_data_bulk(void *host, uint8_t cmd, uint8_t bcmd, cons
         lenr = read_size;
     
     for (i = 0; i < retry; i++ ) {
-        ret = trans->xfer(host, (const uint8_t *)&addr, sizeof(addr), rdata + 5, lenr, &len_rsp, &cmd_rsp);
+        ret = intf->cb_xfer(intf->dbc, (const uint8_t *)&addr, sizeof(addr), rdata + 5, lenr, &len_rsp, &cmd_rsp);
         if (ret == ERR_NONE) {
             read_size -= len_rsp;
             addr += len_rsp;

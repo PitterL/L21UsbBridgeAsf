@@ -10,6 +10,7 @@
 #define PLATFORM_BOARD_H_
 
 #include "board_i2c.h"
+#include "board_spi.h"
 #include "board_gpio.h"
 #include "board_cdc.h"
 #include "board_clock.h"
