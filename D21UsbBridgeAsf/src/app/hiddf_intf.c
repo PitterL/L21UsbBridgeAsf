@@ -76,13 +76,19 @@ int32_t hid_get_buffer(void **buf_ptr, uint32_t *buf_ptr_size)
         }else if (TEST_BIT(hc->flag, BIT_AUTO_REPEAT)) {    // Auto repeat the command
             if (u5030_chg_line_active(hc)) {
                 if (scfg->dym.repeat.cfg.bits.bus == REPEAT_BUS_SPI_UART) {
-                        ;//TODO
+                    data = (uint8_t *)&scfg->dym.repeat.lenw;
+                    count = scfg->dym.repeat.lenw + 2;
+
+                    u5030_spi_transfer_bridge_data(hc, CMD_AUTO_REPEAT_RESP, data, count);
                 }else if (scfg->dym.repeat.cfg.bits.bus == REPEAT_BUS_IIC1) {
                     data = (uint8_t *)&scfg->dym.repeat.lenw;
                     count = scfg->dym.repeat.lenw + 2;
-                    u5030_transfer_bridge_data(hc, CMD_AUTO_REPEAT_RESP, data, count);
+
+                    u5030_i2c_transfer_bridge_data(hc, CMD_AUTO_REPEAT_RESP, data, count);
                 }else if (scfg->dym.repeat.cfg.bits.bus == REPEAT_BUS_IIC2) {
                     //TODO
+                }else {
+                    //do nothing
                 }
             }
         }
@@ -137,6 +143,13 @@ void hiddf_intf_send(cb_hiddf_func_data_send cb_send)
     }
 }
 
+bool hid_chg_line_active(void)
+{
+    controller_t *hc = &g_host_controller;
+
+    return u5030_chg_line_active(hc);
+}
+
 static int32_t load_config_from_flash(config_setting_t * scfg)
 {
     return -ERR_DENIED;
@@ -163,7 +176,7 @@ static void load_default_config(config_setting_t *scfg)
     scfg->base.data8.bits.chg_active = ACTIVE_LEVEL_LOW;
     scfg->base.data8.bits.chg_gpio = GPIO_PIN_1;
 
-    scfg->ext.data1.bits.com_mode = COM_MODE_IIC_ONLY;
+    scfg->ext.data1.bits.com_mode = /*COM_MODE_IIC_ONLY*/ COM_MODE_SPI_ONLY;
     scfg->ext.data1.bits.checksum = ~scfg->ext.data1.bits.com_mode;
 
     scfg->crc.value = crc24((uint8_t *)scfg, offsetof(config_setting_t, crc));

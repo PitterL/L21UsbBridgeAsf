@@ -16,6 +16,8 @@
 #include "external/err_codes.h"
 
 static int32_t enpack_d21_response(response_data_t *resp, uint8_t rdata0, uint8_t rdata1, const uint8_t *data, uint32_t count);
+static void enpackk_d21_response_directly(response_data_t *resp);
+static void *get_d21_response_cache(response_data_t *resp, uint16_t *sz);
 
 static int32_t get_bridge_io(void *host, uint8_t cmd, uint8_t bcmd, const uint8_t *data, uint32_t count)
 {
@@ -32,12 +34,11 @@ static int32_t send_bridge_data_bulk(void *host, uint8_t cmd, uint8_t bcmd, cons
     controller_t *hc = (controller_t *)host;
     config_setting_t * scfg = &hc->setting;
     response_data_t * resp = &hc->response;
-    uint8_t *rdata = resp->rcache.data;
+    uint8_t *rcache;
     transfer_data_t * trans = &hc->transfer;
     uint8_t * cdata = trans->ccache.data;
     bus_interface_t * intf = hc->intf;
-    uint32_t size = sizeof(resp->rcache);
-    uint16_t addr, lenr, read_size, read_size_max, len_rsp = 0;
+    uint16_t size, addr, lenr, read_size, read_size_max, len_rsp = 0;
     uint8_t cmd_rsp = OBP_DATA4_BULK_TRANSFER_COMPLETED;
     int32_t i, retry = scfg->base.data2.bits.iic_retry ? 3 : 0;
     int32_t ret;
@@ -48,10 +49,6 @@ static int32_t send_bridge_data_bulk(void *host, uint8_t cmd, uint8_t bcmd, cons
     if (count < 7)
         return ERR_INVALID_DATA;
 
-    read_size = data[0] | (data[1] << 8);
-    //data[2~4]: reserved 
-    addr = data[5] | (data[6] << 8);
-
     //Need initialize bus before transfer data
     if (TEST_BIT(hc->flag, BIT_BUS_REINIT) || !TEST_BIT(hc->flag, BIT_BUS_INITED)) {
         ret = u5030_set_bridge_ext_config(hc, CMD_EXTENSION_CONFIG, (uint8_t *)&scfg->ext, sizeof(scfg->ext));
@@ -59,14 +56,18 @@ static int32_t send_bridge_data_bulk(void *host, uint8_t cmd, uint8_t bcmd, cons
             return ret;
     }
 
-    read_size_max = size - 5;
+    read_size = data[0] | (data[1] << 8);   // The D21 bridge protocol has some issue to support size large than 255, resp len may be truncated
+    //data[2~4]: reserved
+    addr = data[5] | (data[6] << 8);
+    rcache = get_d21_response_cache(resp, &size);
+    read_size_max = intf->cb_trans_size(intf->dbc, size - 5);
     if (read_size > read_size_max)
         lenr = read_size_max;    //count may max than buffer size
     else
         lenr = read_size;
     
     for (i = 0; i < retry; i++ ) {
-        ret = intf->cb_xfer(intf->dbc, (const uint8_t *)&addr, sizeof(addr), rdata + 5, lenr, &len_rsp, &cmd_rsp);
+        ret = intf->cb_xfer(intf->dbc, (const uint8_t *)&addr, sizeof(addr), rcache + 5, lenr, &len_rsp, &cmd_rsp);
         if (ret == ERR_NONE) {
             read_size -= len_rsp;
             addr += len_rsp;
@@ -88,12 +89,13 @@ static int32_t send_bridge_data_bulk(void *host, uint8_t cmd, uint8_t bcmd, cons
         }
     }
 
-    rdata[0] = cmd;
-    rdata[1] = bcmd;
-    rdata[2] = 0;
-    rdata[3] = cmd_rsp;
-    rdata[4] = len_rsp;
-    resp->dirty = true;
+    rcache[0] = cmd;
+    rcache[1] = bcmd;
+    rcache[2] = 0;
+    rcache[3] = cmd_rsp;
+    rcache[4] = len_rsp & 0xff;  // Here may has truncation issue, need protocol fix
+
+    enpackk_d21_response_directly(resp);
 
     return ERR_NONE;
 }
@@ -232,6 +234,20 @@ static int32_t enpack_d21_response_nak(response_data_t *resp)
     
     memset(dummy, 0xff, sizeof(dummy));
     return enpack_d21_response(resp, CMD_NAK, CMD_NAK, dummy, sizeof(dummy));
+}
+
+static void enpackk_d21_response_directly(response_data_t *resp)
+{
+    resp->dirty = true;
+}
+
+static void *get_d21_response_cache(response_data_t *resp, uint16_t *sz)
+{
+    if (sz) {
+        *sz = sizeof(resp->rcache.data);
+    }
+
+    return resp->rcache.data;
 }
 
 int32_t d21_parse_command(void *host, const uint8_t *data, uint32_t count)

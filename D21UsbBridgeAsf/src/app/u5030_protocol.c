@@ -17,6 +17,9 @@
 #include "external/err_codes.h"
 
 static int32_t enpack_response(response_data_t *resp, uint8_t rdata0, const uint8_t *data, uint32_t count);
+static void enpack_response_directly(response_data_t *resp);
+static void *get_response_cache(response_data_t *resp, uint16_t *sz);
+
 static int32_t set_bridge_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
 {
     controller_t *hc = (controller_t *)host;
@@ -29,7 +32,8 @@ static int32_t set_bridge_config(void *host, uint8_t cmd, const uint8_t *data, u
 
     if (cfg_size) {
         if (memcmp(&scfg->base, data, cfg_size)) {
-            return u5030_set_bridge_ext_config(hc, cmd, data, cfg_size);            
+            memcpy(&scfg->base, data, cfg_size);            
+            return u5030_set_bridge_ext_config(hc, cmd, NULL, 0);            
         }
     }
     
@@ -46,23 +50,20 @@ int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data
     response_data_t *resp = &hc->response;    
     uint8_t checksum;
     uint8_t mode;
-    uint32_t cfg_size = sizeof(scfg->ext);
+    uint32_t cfg_size;
     uint32_t baudrate;
     uint8_t edata;
     BUS_TYPE_T btype = BUS_I2C;
-    bool isself = data == (uint8_t *)&scfg->ext;
     int32_t ret;
 
-    if (cfg_size > count)
-        return ERR_INVALID_DATA;
-
-    if (!isself)    { //here may be itself outside    
+    if (count)    {   
         checksum = DESC_GET(data[0], EXT_CONFIG_DATA1_COMMUNICATION_MODE_CHECKSUM);
         mode = DESC_GET(data[0], EXT_CONFIG_COMMUNICATION_MODE);
         if (checksum && mode && (checksum + mode != 0xFF))
             return -ERR_INVALID_DATA;
 
-        memcpy(&scfg->ext, data, cfg_size);
+        cfg_size = Min(sizeof(*scfg), count);
+        memcpy(scfg, data, cfg_size);
     }
 
     if (scfg->ext.data1.bits.com_mode == COM_MODE_IIC_ONLY) {
@@ -112,7 +113,21 @@ int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data
             baudrate = 4000000;
         }
 
-        edata = scfg->base.data4.bits.spi_mode;
+        switch (scfg->base.data4.bits.spi_mode) {
+        case SPI_MODE_0:
+            edata = 0;
+            break;
+        case SPI_MODE_1:
+            edata = 1;
+            break;
+        case SPI_MODE_2:
+            edata = 2;
+            break;
+        case SPI_MODE_3:
+        default:
+            edata = 3;
+        }
+
         btype = BUS_SPI;
     }
 
@@ -138,29 +153,28 @@ int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data
     //set init tag
     SET_BIT(hc->flag, BIT_BUS_INITED);    
 
-    if (isself)
+    if (!count)
         return ERR_NONE;
     
     return enpack_response(resp, cmd, data, count);
 }
 
 /*
-    Transfer bus data (read or write)
+    Transfer i2c bus data (read or write)
     @host: device controller handle
     @cmd: command from upper level(repeat or true command)
     @data: data buffer
     @count: data buffer size
     @return ERR_NONE successful, other value if failed
 */
-int32_t u5030_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
+int32_t u5030_i2c_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
 {
     controller_t *hc = (controller_t *)host;
     config_setting_t * scfg = &hc->setting;
     response_data_t * resp = &hc->response;
-    uint8_t *rdata = resp->rcache.data;
+    uint8_t *rcache;
     bus_interface_t * intf = hc->intf;
-    uint32_t size = sizeof(resp->rcache.data);
-    uint16_t lenw, lenr, read_size_max, len_rsp = 0;
+    uint16_t size, lenw, lenr, read_size_max, len_rsp = 0;
     uint8_t cmd_rsp;
     int32_t ret;
     int32_t i, retry = scfg->base.data2.bits.iic_retry ? 3 : 0;
@@ -183,21 +197,93 @@ int32_t u5030_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data,
             return ret;
     }
 
-    read_size_max = size - 2;   //bytes[0:1] is response
+    rcache = get_response_cache(resp, &size);
+    read_size_max = intf->cb_trans_size(intf->dbc, size - 2);   // bytes[0:1] is response
     if (lenr > read_size_max)
         lenr = read_size_max;    //count may max than buffer size
 
-    for ( i = 0; i < retry; i++ ) {
-        ret = intf->cb_xfer(intf->dbc, data + 2, lenw, rdata + 2, lenr, &len_rsp, &cmd_rsp);
+    for ( i = 0; i <= retry; i++ ) {
+        ret = intf->cb_xfer(intf->dbc, data + 2, lenw, rcache + 2, lenr, &len_rsp, &cmd_rsp);
         if (ret == ERR_NONE) {
             if (cmd == CMD_AUTO_REPEAT_RESP) {
-                rdata[0] = cmd;
-                rdata[1] = cmd_rsp;
+                rcache[0] = cmd;
+                rcache[1] = cmd_rsp;
             }else {
-                rdata[0] = cmd_rsp;
-                rdata[1] = len_rsp;
+                rcache[0] = cmd_rsp;
+                rcache[1] = len_rsp;
             }
-            resp->dirty = true;
+
+            enpack_response_directly(resp); //above direct write response cache
+            break;
+        }
+    }
+
+    return ret;
+}
+
+/*
+    Transfer spi bus data (read or write)
+    @host: device controller handle
+    @cmd: command from upper level(repeat or true command)
+    @data: data buffer
+    @count: data buffer size
+    @return ERR_NONE successful, other value if failed
+*/
+int32_t u5030_spi_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
+{
+    controller_t *hc = (controller_t *)host;
+    config_setting_t * scfg = &hc->setting;
+    response_data_t * resp = &hc->response;
+    uint8_t *rcache;
+    bus_interface_t * intf = hc->intf;
+    uint16_t size, read_size_max, lenw, lenr, len_rsp = 0;
+    uint8_t cmd_rsp;
+    const SPI_HEADER_PACKET_T *phead;
+    int32_t ret;
+    int32_t i, retry = 0;
+
+    if (!intf || !intf->cb_xfer)
+        return ERR_NOT_READY;
+
+    if (count < sizeof(SPI_HEADER_PACKET_T) + 2)
+        return ERR_INVALID_DATA;
+
+    lenw = data[0];
+    if ((uint32_t)(lenw + 2) > count)
+        return ERR_INVALID_DATA;
+
+    phead = (SPI_HEADER_PACKET_T *)(data + 2);
+    if (phead->cmd == SPI_CMD_WRITE) {
+        lenr = sizeof(SPI_HEADER_PACKET_T);
+    } else if (phead->cmd == SPI_CMD_READ) {
+        lenr = sizeof(SPI_HEADER_PACKET_T) + phead->len;      
+    }else {
+        return ERR_INVALID_DATA;
+    }
+
+    //Need initialize bus before transfer data
+    if (!TEST_BIT(hc->flag, BIT_BUS_INITED)) {
+        ret = u5030_set_bridge_ext_config(hc, CMD_EXTENSION_CONFIG, (uint8_t *)&scfg->ext, sizeof(scfg->ext));
+        if (ret != ERR_NONE)
+            return ret;
+    }
+
+    rcache = get_response_cache(resp, &size);
+    read_size_max = intf->cb_trans_size(intf->dbc, size - 2);   // bytes[0:1] is response
+    if (lenr > read_size_max)
+        lenr = read_size_max;    //count may max than buffer size
+    for ( i = 0; i <= retry; i++ ) {
+        ret = intf->cb_xfer(intf->dbc, data + 2, lenw, rcache + 2, lenr, &len_rsp, &cmd_rsp);
+        if (ret == ERR_NONE) {
+            if (cmd == CMD_AUTO_REPEAT_RESP) {
+                rcache[0] = cmd;
+                rcache[1] = cmd_rsp;
+            }else {
+                rcache[0] = cmd_rsp;
+                rcache[1] = len_rsp;
+            }
+
+            enpack_response_directly(resp); //above direct write response cache
             break;
         }
     }
@@ -407,7 +493,7 @@ static int32_t find_i2c_address(void *host, uint8_t cmd, const uint8_t *data, ui
     bus_interface_t * intf = hc->intf;
     uint8_t rdata[1] = { IIC_NO_DEVICE_FOUND };
 
-    uint8_t addr_list[] = {0x4a, 0x4b, 0x4c, 0x4d};
+    uint8_t addr_list[] = {0x4A, 0x4B, 0x4C, 0x4D, 0x24, 0x25, 0x26, 0x27 };
     uint8_t i;
     uint8_t ret;
 
@@ -449,8 +535,8 @@ static struct cmd_func_map u5030_command_func_map_list[] = {
     {CMD_SET_IO_F, NULL},
     {CMD_GET_IO_F, NULL},
     {CMD_FIND_IIC_ADDRESS, find_i2c_address},
-    {CMD_SPI_UART_DATA, u5030_transfer_bridge_data},
-    {CMD_IIC_DATA_1, u5030_transfer_bridge_data},
+    {CMD_SPI_UART_DATA, u5030_spi_transfer_bridge_data},
+    {CMD_IIC_DATA_1, u5030_i2c_transfer_bridge_data},
     {CMD_IIC_DATA_2, NULL},
     {CMD_REPEAT, set_bridge_auto_repeat},
     {CMD_REPEAT_STACK, NULL},
@@ -508,6 +594,20 @@ int32_t enpack_response_nak(response_data_t *resp)
 {
     uint8_t dummy = 0;
     return enpack_response(resp, CMD_NAK, &dummy, 1);
+}
+
+static void enpack_response_directly(response_data_t *resp)
+{
+    resp->dirty = true;
+}
+
+static void *get_response_cache(response_data_t *resp, uint16_t *sz)
+{
+    if (sz) {
+        *sz = sizeof(resp->rcache.data);
+    }
+
+    return resp->rcache.data;
 }
 
 int32_t u5030_parse_command(void *host, const uint8_t *data, uint32_t count)
@@ -568,7 +668,8 @@ bool u5030_chg_line_active(void *host)
 
     switch(scfg->dym.repeat.cfg.bits.chg) {
     case REPEAT_CHG_BY_TIMER:
-        //TODO
+        pin = GPIO_P_1; //Still use default CHG Pin
+        chkv = false;
         break;
     case REPEAT_CHG_BY_GPIO0_L:
         pin = GPIO_P_0;

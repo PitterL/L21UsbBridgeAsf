@@ -5,5 +5,5 @@
  *  Author: A41450
  */ 
 
-uint8_t crc8(const uint8_t *data, uint32_t len);
-uint32_t crc24(const uint8_t *data, uint32_t len);
+uint8_t crc8(const void *data, uint32_t len);
+uint32_t crc24(const void *data, uint32_t len);

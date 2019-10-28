@@ -8,43 +8,43 @@
 #include <stdint.h>
 #include <string.h>
 
-//#include "../driver_init.h"
+#include "systick_counter.h"
 #include "crc.h"
 #include "board/board.h"
+#include "hiddf_intf.h"
 #include "bus.h"
 #include "external/utils.h"
 #include "external/err_codes.h"
 
-iic_controller_t iic_bus_controller;
-spi_controller_t spi_bus_controller;
+#define WAITING_LOOP_UNIT_SHIFT 4
+bool bus_waiting_state(uint32_t delay_us, bool active)
+{
+    bool status;
+    int count = delay_us >> WAITING_LOOP_UNIT_SHIFT;
 
-bus_interface_t bus_controller_list[BUS_TYPE_SUM] = {
+    do {
+        status = hid_chg_line_active();
+        if (status == active)
+            break;
+
+        delay_cycles_us(1 << WAITING_LOOP_UNIT_SHIFT);
+    } while(count-- > 0);
+
+    return count > 0;
+}
+
+bus_interface_t *bus_controller_list[BUS_TYPE_SUM] = {
     //BUS_I2C
-    {
-        .cb_init = iic_bus_init,
-        .cb_deinit = iic_bus_deinit,
-        .cb_xfer = iic_bus_xfer_data,
-        .cb_ping = iic_bus_ping,
-        .sercom = SERCOM1,
-        .dbc = &iic_bus_controller
-    },
-
+    &i2c_interface,
     //BUS_SPI
-    {
-        .cb_init = spi_bus_init,
-        .cb_deinit = spi_bus_deinit,
-        .cb_xfer = spi_bus_xfer_data,
-        .cb_ping = spi_bus_ping,
-        .sercom = SERCOM1,
-        .dbc = &spi_bus_controller
-    }
+    &spi_interface,
 };
 
 int32_t bus_init(controller_t *hc, BUS_TYPE_T id)
 {
     if (id < BUS_TYPE_SUM) {
         hc->mode = id; 
-        hc->intf = &bus_controller_list[id];
+        hc->intf = bus_controller_list[id];
        
         return ERR_NONE;
     }

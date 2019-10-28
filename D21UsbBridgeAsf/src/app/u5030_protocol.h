@@ -230,10 +230,19 @@ union config_data4{
 
 #define CONFIG_DATA4_SPI_MODE_SHIFT 4
 #define CONFIG_DATA4_SPI_MODE_MASK 0x3
-#define SPI_MODE_0 0
+/*
+Mode 0 CPOL=0, CPHA=0
+Mode 1 CPOL=0, CPHA=1
+Mode 2 CPOL=1, CPHA=0
+Mode 3 CPOL=1, CPHA=1
+
+    时钟极性CPOL: 即SPI空闲时，时钟信号SCLK的电平（1:空闲时高电平; 0:空闲时低电平）
+    时钟相位CPHA: 即SPI在SCLK第几个边沿开始采样（0:第一个边沿开始; 1:第二个边沿开始）
+*/
+#define SPI_MODE_3 0
 #define SPI_MODE_1 1
 #define SPI_MODE_2 2
-#define SPI_MODE_3 3
+#define SPI_MODE_0 3
 
 #define CONFIG_DATA4_UART_BAUDRATE_SHIFT 0
 #define CONFIG_DATA4_UART_BAUDRATE_MASK 0xf
@@ -1130,12 +1139,12 @@ typedef struct {
 #define GPIO_P_LED2 GP_IO_LED2_EN
 #endif
 
-
 int32_t u5030_parse_command(void *host, const uint8_t *data, uint32_t count);
 int32_t u5030_check_auto_repeat_avaliable(void *host, const uint8_t *data, uint32_t count);
 bool u5030_chg_line_active(void *host);
 int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
-int32_t u5030_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
+int32_t u5030_i2c_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
+int32_t u5030_spi_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
 int32_t u5030_init(void);
 void u5030_deinit(void);
 

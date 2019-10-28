@@ -27,8 +27,9 @@ static uint8_t __crc8(uint8_t crc, uint8_t val)
     return crc;
 }
 
-uint8_t crc8(const uint8_t *data, uint32_t len)
+uint8_t crc8(const void *data_ptr, uint32_t len)
 {
+    const uint8_t *data = (const uint8_t *)data_ptr;
     uint8_t crc = 0;
     
     for(uint32_t i = 0; i < len; i++) {
@@ -53,8 +54,9 @@ static void __crc24(uint32_t *crc, uint8_t firstbyte, uint8_t secondbyte)
     *crc = result;
 }
 
-uint32_t crc24(const uint8_t *data, uint32_t len)
+uint32_t crc24(const void *data_ptr, uint32_t len)
 {
+    const uint8_t *data = (const uint8_t *)data_ptr;
     uint32_t crc = 0;
     const uint8_t *ptr = data;
     const uint8_t *last_val = data + len - 1;

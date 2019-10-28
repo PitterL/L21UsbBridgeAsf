@@ -56,10 +56,10 @@ static struct pin_config g_board_pins_list[] =
     //GP_WIFI_WAKE
     {PIN_PA15, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
-    //GP_IO5
+    //GP_IO5, may conflict with SPI port0
     {PIN_PA18, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
-    //GP_VDD33_EN
+    //GP_VDD33_EN, may conflict with SPI port0
     {PIN_PA19, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, true},
 
     //GP_IO_BTLD
@@ -99,6 +99,7 @@ struct mux_config {
 
 static struct mux_config g_board_ports_list[] =
 {
+    /*
     //SERCOM1: IIC
     {PINMUX_PA16C_SERCOM1_PAD0, SYSTEM_PINMUX_PIN_DIR_OUTPUT_WITH_READBACK, SYSTEM_PINMUX_PIN_PULL_UP, false},
     {PINMUX_PA17C_SERCOM1_PAD1, SYSTEM_PINMUX_PIN_DIR_OUTPUT_WITH_READBACK, SYSTEM_PINMUX_PIN_PULL_UP, false},
@@ -106,6 +107,7 @@ static struct mux_config g_board_ports_list[] =
     //SERCOM0: UART
     {PINMUX_PA04D_SERCOM0_PAD0, SYSTEM_PINMUX_PIN_DIR_OUTPUT, SYSTEM_PINMUX_PIN_PULL_NONE, false},
     {PINMUX_PA07D_SERCOM0_PAD3, SYSTEM_PINMUX_PIN_DIR_INPUT, SYSTEM_PINMUX_PIN_PULL_NONE, false},
+    */
 
     //ADC
     {PINMUX_PA03B_ADC_AIN1, SYSTEM_PINMUX_PIN_DIR_INPUT, SYSTEM_PINMUX_PIN_PULL_NONE, false},

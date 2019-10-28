@@ -361,6 +361,17 @@
       <ToolNumber>ATML2130021800016805</ToolNumber>
       <ToolName>EDBG</ToolName>
     </com_atmel_avrdbg_tool_edbg>
+    <custom>
+      <ToolOptions xmlns="">
+        <InterfaceProperties>
+        </InterfaceProperties>
+        <InterfaceName>SWD</InterfaceName>
+      </ToolOptions>
+      <ToolType xmlns="">custom</ToolType>
+      <ToolNumber xmlns="">
+      </ToolNumber>
+      <ToolName xmlns="">Custom Programming Tool</ToolName>
+    </custom>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <ToolchainSettings>
@@ -804,6 +815,7 @@
   <ItemGroup>
     <Folder Include="src\" />
     <Folder Include="src\app\" />
+    <Folder Include="src\app\bus" />
     <Folder Include="src\ASF\" />
     <Folder Include="src\ASF\common2\" />
     <Folder Include="src\ASF\common2\services\" />
@@ -910,6 +922,18 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\app\bus.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\bus\i2c.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\bus\i2c.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\bus\spi.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\bus\spi.h">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\app\crc.c">
