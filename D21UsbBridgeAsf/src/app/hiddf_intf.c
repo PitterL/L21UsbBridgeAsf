@@ -176,7 +176,7 @@ static void load_default_config(config_setting_t *scfg)
     scfg->base.data8.bits.chg_active = ACTIVE_LEVEL_LOW;
     scfg->base.data8.bits.chg_gpio = GPIO_PIN_1;
 
-    scfg->ext.data1.bits.com_mode = /*COM_MODE_IIC_ONLY*/ COM_MODE_SPI_ONLY;
+    scfg->ext.data1.bits.com_mode = /* COM_MODE_IIC_ONLY COM_MODE_SPI50*/COM_MODE_SPI51;
     scfg->ext.data1.bits.checksum = ~scfg->ext.data1.bits.com_mode;
 
     scfg->crc.value = crc24((uint8_t *)scfg, offsetof(config_setting_t, crc));

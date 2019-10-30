@@ -12,7 +12,7 @@
 #include "external/utils.h"
 #include "external/err_codes.h"
 #include "app/bus.h"
-#include "i2c.h"
+
 /*
     I2c bus transfer data
     @dbc: device bus controller handle
@@ -84,7 +84,7 @@ int32_t iic_bus_xfer_data(void *dbc, const uint8_t *wdata, uint16_t wlen, uint8_
 /*
     Scan first i2c devices on bus
     @dbc: device bus controller handle
-    return i2c device addr if get
+    return i2c device addr if get, else 0
 */
 uint8_t iic_bus_ping(void *dbc, uint8_t addr)
 {
@@ -119,6 +119,7 @@ uint16_t iic_bus_trans_size(void *dbc, uint16_t size)
 static iic_controller_t iic_bus_controller;
 
 bus_interface_t i2c_interface = {
+    .type = BUS_I2C,
     .cb_init = iic_board_init,
     .cb_deinit = iic_board_deinit,
     .cb_xfer = iic_bus_xfer_data,

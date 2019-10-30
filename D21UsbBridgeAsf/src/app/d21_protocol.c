@@ -67,6 +67,7 @@ static int32_t send_bridge_data_bulk(void *host, uint8_t cmd, uint8_t bcmd, cons
         lenr = read_size;
     
     for (i = 0; i < retry; i++ ) {
+        //FIXME: here only support I2C interface since the protocol not compatible
         ret = intf->cb_xfer(intf->dbc, (const uint8_t *)&addr, sizeof(addr), rcache + 5, lenr, &len_rsp, &cmd_rsp);
         if (ret == ERR_NONE) {
             read_size -= len_rsp;

@@ -27,13 +27,16 @@ static int32_t set_bridge_config(void *host, uint8_t cmd, const uint8_t *data, u
     response_data_t *resp = &hc->response;
 
     uint32_t cfg_size;
+    int32_t ret;
 
     cfg_size = Min(sizeof(scfg->base), count);
 
     if (cfg_size) {
         if (memcmp(&scfg->base, data, cfg_size)) {
             memcpy(&scfg->base, data, cfg_size);            
-            return u5030_set_bridge_ext_config(hc, cmd, NULL, 0);            
+            ret = u5030_set_bridge_ext_config(hc, cmd, NULL, 0);
+            if (ret)
+                return ret;
         }
     }
     
@@ -85,7 +88,7 @@ int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data
         edata = scfg->base.data2.bits.iic1_addr;
         btype = BUS_I2C;
 
-    } else if (scfg->ext.data1.bits.com_mode == COM_MODE_SPI_ONLY) {
+    } else if (scfg->ext.data1.bits.com_mode == COM_MODE_SPI50) {
         switch(scfg->base.data1.bits.spi_clk) {
         case SPI_CLK_25KHZ:
             baudrate = 25000;
@@ -128,7 +131,14 @@ int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data
             edata = 3;
         }
 
-        btype = BUS_SPI;
+        btype = BUS_SPI50;
+    } else if (scfg->ext.data1.bits.com_mode == COM_MODE_SPI51) {
+        // This is simulate 
+        baudrate = 500000;  //SPI baudrate rate
+        edata = 3;  //SPI mode 3
+        btype = BUS_SPI51;
+    } else {
+        return ERR_UNSUPPORTED_DEV;
     }
 
     if (hc->intf && hc->intf->cb_deinit) {
@@ -493,14 +503,29 @@ static int32_t find_i2c_address(void *host, uint8_t cmd, const uint8_t *data, ui
     bus_interface_t * intf = hc->intf;
     uint8_t rdata[1] = { IIC_NO_DEVICE_FOUND };
 
-    uint8_t addr_list[] = {0x4A, 0x4B, 0x4C, 0x4D, 0x24, 0x25, 0x26, 0x27 };
-    uint8_t i;
+    uint8_t i2c_addr_list[] = { 0x4A, 0x4B, 0x4C, 0x4D, 0x24, 0x25, 0x26, 0x27 };
+    uint8_t spi51_addr_list[] = { SPI51_DUMMY_DEVICE_ADDRESS };
+    uint8_t *addr_list;
+    uint8_t i, size;
     uint8_t ret;
 
     if (!intf || !intf->cb_ping)
         return ERR_NOT_READY;
 
-    for (i = 0 ; i < ARRAY_SIZE(addr_list); i++) {
+    switch (intf->type) {
+        case BUS_SPI50:
+            return ERR_UNSUPPORTED_OP;
+        case BUS_SPI51:
+            addr_list = spi51_addr_list;
+            size = ARRAY_SIZE(spi51_addr_list);
+        break;
+        default:
+            addr_list = i2c_addr_list;
+            size = ARRAY_SIZE(i2c_addr_list); 
+    }
+
+
+    for (i = 0 ; i < size; i++) {
         ret = intf->cb_ping(intf->dbc, addr_list[i]);
         if (ret) {
             rdata[0] = ret;

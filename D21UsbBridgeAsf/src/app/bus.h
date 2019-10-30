@@ -10,8 +10,6 @@
 
 #include "d21_protocol.h"
 #include "u5030_protocol.h"
-#include "bus/i2c.h"
-#include "bus/spi.h"
 
 typedef struct response_cache{
     uint8_t data[CONF_USB_COMPOSITE_HID_GENERIC_INTIN_MAXPKSZ];    //must be aligned
@@ -43,6 +41,7 @@ typedef uint16_t (*funct_bus_trans_size)(void *dbc, uint16_t size);
 #define MAX_TRANSFER_SIZE_ONE_TIME  255
 
 typedef struct bus_interface {
+    int type;
     func_bus_init_t cb_init;
     func_bus_deinit_t cb_deinit;
     func_bus_xfer_t cb_xfer;
@@ -54,10 +53,7 @@ typedef struct bus_interface {
 
 }bus_interface_t;
 
-extern bus_interface_t i2c_interface;
-extern bus_interface_t spi_interface;
-
-typedef enum BUS_TYPE {BUS_I2C, BUS_SPI, BUS_I2C_WRAP_SPI, BUS_TYPE_SUM} BUS_TYPE_T;
+typedef enum BUS_TYPE {BUS_I2C, BUS_SPI50, BUS_SPI51, BUS_TYPE_SUM} BUS_TYPE_T;
 
 typedef struct {
     config_setting_t setting;
@@ -77,5 +73,8 @@ void bus_deinit(controller_t *hc);
 bool bus_mode(controller_t *hc, BUS_TYPE_T id);
 void *bus_response_cache(response_data_t *resp, uint16_t *sz);
 bool bus_waiting_state(uint32_t delay_us, bool active);
+
+#include "bus/i2c.h"
+#include "bus/spi.h"
 
 #endif

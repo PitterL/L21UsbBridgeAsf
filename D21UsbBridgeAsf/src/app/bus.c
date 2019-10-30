@@ -12,9 +12,9 @@
 #include "crc.h"
 #include "board/board.h"
 #include "hiddf_intf.h"
-#include "bus.h"
 #include "external/utils.h"
 #include "external/err_codes.h"
+#include "bus.h"
 
 #define WAITING_LOOP_UNIT_SHIFT 4
 bool bus_waiting_state(uint32_t delay_us, bool active)
@@ -36,8 +36,10 @@ bool bus_waiting_state(uint32_t delay_us, bool active)
 bus_interface_t *bus_controller_list[BUS_TYPE_SUM] = {
     //BUS_I2C
     &i2c_interface,
-    //BUS_SPI
-    &spi_interface,
+    //BUS_SPI50
+    &spi50_interface,
+    //BUS_SPI51
+    &spi51_interface,
 };
 
 int32_t bus_init(controller_t *hc, BUS_TYPE_T id)

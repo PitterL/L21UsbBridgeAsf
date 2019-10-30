@@ -933,7 +933,13 @@
     <Compile Include="src\app\bus\spi.c">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="src\app\bus\spi50.c">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="src\app\bus\spi.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="src\app\bus\spi51.c">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="src\app\crc.c">
