@@ -68,9 +68,9 @@ typedef struct {
     bus_interface_t *intf;
 }controller_t;
 
-int32_t bus_init(controller_t *hc, BUS_TYPE_T id);
+int32_t bus_init(controller_t *hc);
 void bus_deinit(controller_t *hc);
-bool bus_mode(controller_t *hc, BUS_TYPE_T id);
+int32_t bus_attach(controller_t *hc, BUS_TYPE_T id);
 void *bus_response_cache(response_data_t *resp, uint16_t *sz);
 bool bus_waiting_state(uint32_t delay_us, bool active);
 

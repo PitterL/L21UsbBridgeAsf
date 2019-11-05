@@ -176,7 +176,12 @@ static void load_default_config(config_setting_t *scfg)
     scfg->base.data8.bits.chg_active = ACTIVE_LEVEL_LOW;
     scfg->base.data8.bits.chg_gpio = GPIO_PIN_1;
 
-    scfg->ext.data1.bits.com_mode = /* COM_MODE_IIC_ONLY COM_MODE_SPI50*/COM_MODE_SPI51;
+    //Set default mode for Port 0
+    if (port_pin_get_input_level(GP_IO0))
+        scfg->ext.data1.bits.com_mode = COM_MODE_IIC_ONLY;
+    else     
+        scfg->ext.data1.bits.com_mode = COM_MODE_SPI51;
+
     scfg->ext.data1.bits.checksum = ~scfg->ext.data1.bits.com_mode;
 
     scfg->crc.value = crc24((uint8_t *)scfg, offsetof(config_setting_t, crc));
@@ -189,11 +194,7 @@ int32_t hiddf_intf_init(void)
     platform_board_init();
     load_default_config(&hc->setting);
 
-    // Initialize as I2C default
-    bus_init(hc, BUS_I2C);
-
-    u5030_init();
-    d21_init();
+    bus_init(hc);
 
     return ERR_NONE;
 }
@@ -201,9 +202,6 @@ int32_t hiddf_intf_init(void)
 void hiddf_intf_deinit(void)
 {
     controller_t *hc = &g_host_controller;
-
-    d21_deinit();
-    u5030_deinit();   
 
     bus_deinit(hc); 
 }

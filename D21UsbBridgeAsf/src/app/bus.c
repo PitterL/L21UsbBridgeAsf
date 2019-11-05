@@ -42,25 +42,28 @@ bus_interface_t *bus_controller_list[BUS_TYPE_SUM] = {
     &spi51_interface,
 };
 
-int32_t bus_init(controller_t *hc, BUS_TYPE_T id)
+int32_t bus_attach(controller_t *hc, BUS_TYPE_T id)
 {
     if (id < BUS_TYPE_SUM) {
-        hc->mode = id; 
+        hc->mode = id;
         hc->intf = bus_controller_list[id];
-       
+        
         return ERR_NONE;
     }
 
     return ERR_INVALID_ARG;
 }
 
-void bus_deinit(controller_t *hc)
+int32_t bus_init(controller_t *hc)
 {
-    hc->mode = BUS_TYPE_SUM;
-    hc->intf = NULL;
+    u5030_init();
+    d21_init();
+
+    return ERR_NONE;
 }
 
-bool bus_mode(controller_t *hc, BUS_TYPE_T id)
+void bus_deinit(controller_t *hc)
 {
-    return hc->mode == id;
+    d21_deinit();
+    u5030_deinit();
 }

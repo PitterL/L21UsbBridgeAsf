@@ -33,7 +33,7 @@ static int32_t set_bridge_config(void *host, uint8_t cmd, const uint8_t *data, u
 
     if (cfg_size) {
         if (memcmp(&scfg->base, data, cfg_size)) {
-            memcpy(&scfg->base, data, cfg_size);            
+            memcpy(&scfg->base, data, cfg_size);
             ret = u5030_set_bridge_ext_config(hc, cmd, NULL, 0);
             if (ret)
                 return ret;
@@ -72,17 +72,19 @@ int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data
     if (scfg->ext.data1.bits.com_mode == COM_MODE_IIC_ONLY) {
         switch(scfg->base.data1.bits.iic_clk) {
         case IIC_CLK_50KHZ:
+            // FIXME: Some issue work for 50Khz 
+            /*
             baudrate = 50;
-            break;
+            break;*/
         case IIC_CLK_100KHZ:
-            baudrate = 100;
+            baudrate = I2C_MASTER_BAUD_RATE_100KHZ;
             break;
         case IIC_CLK_200KHZ:
             baudrate = 200;
             break;
         case IIC_CLK_400KHZ:
         default:
-            baudrate = 400;
+            baudrate = I2C_MASTER_BAUD_RATE_400KHZ;
         }
         
         edata = scfg->base.data2.bits.iic1_addr;
@@ -134,7 +136,7 @@ int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data
         btype = BUS_SPI50;
     } else if (scfg->ext.data1.bits.com_mode == COM_MODE_SPI51) {
         // This is simulate 
-        baudrate = 500000;  //SPI baudrate rate
+        baudrate = 1000000;  //SPI baudrate rate
         edata = 3;  //SPI mode 3
         btype = BUS_SPI51;
     } else {
@@ -146,10 +148,9 @@ int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data
             CLR_BIT(hc->flag, BIT_BUS_INITED);
            hc->intf->cb_deinit(hc->intf->dbc);
         }
-        bus_deinit(hc);
     }
 
-    bus_init(hc, btype);
+    bus_attach(hc, btype);
     if (!hc->intf || !hc->intf->cb_init)
         return ERR_NOT_FOUND;
 

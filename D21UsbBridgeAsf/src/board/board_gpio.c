@@ -26,10 +26,10 @@ static struct pin_config g_board_pins_list[] =
     //GP_TP2
     {PIN_PA08, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_UP}, false},
 
-    //GP_IO0
+    //GP_IO0: I2C/SPI default mode for Port0 at initializing. I2C: High, SPI: low
     {PIN_PB10, {PORT_PIN_DIR_INPUT, PORT_PIN_PULL_UP}, false},
 
-    //GP_IO1
+    //GP_IO1: Temp use for output a low level that we could use a jumper to set GP_IO0 state
     {PIN_PB11, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
     //GP_IO2
@@ -56,10 +56,10 @@ static struct pin_config g_board_pins_list[] =
     //GP_WIFI_WAKE
     {PIN_PA15, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
-    //GP_IO5, may conflict with SPI port0
+    //GP_IO5, redefined to SPI SERCOM0 PAD2
     {PIN_PA18, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, false},
 
-    //GP_VDD33_EN, may conflict with SPI port0
+    //GP_VDD33_EN, redefined to SPI SERCOM0 PAD3
     {PIN_PA19, {PORT_PIN_DIR_OUTPUT, PORT_PIN_PULL_NONE}, true},
 
     //GP_IO_BTLD
