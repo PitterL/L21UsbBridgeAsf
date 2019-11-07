@@ -83,15 +83,23 @@ int32_t iic_board_write(void *dbc, const uint8_t *const buf, const uint16_t leng
     pkg.address = ihc->addr;
     pkg.data_length = length;
     pkg.data = buf;
-    
-    result = i2c_master_write_packet_wait(&ihc->module, (struct i2c_master_packet *)&pkg);
-    if (result == STATUS_OK)
-        return ERR_NONE;
-    else if (result == STATUS_ERR_BAD_ADDRESS)
-        return ERR_BAD_ADDRESS;
 
-    return ERR_ABORTED;
-}
+    result = i2c_master_write_packet_wait(&ihc->module, (struct i2c_master_packet *)&pkg);
+    switch (result) {
+        case STATUS_OK:
+            return ERR_NONE;
+        case STATUS_ERR_BAD_ADDRESS:
+            return ERR_BAD_ADDRESS;
+        case STATUS_ERR_OVERFLOW:
+            return ERR_FAILURE;
+        case STATUS_BUSY:
+        case STATUS_ERR_DENIED:
+        case STATUS_ERR_PACKET_COLLISION:
+        case STATUS_ERR_TIMEOUT:
+        default:
+            return ERR_IO;
+    }   
+ }
 
 /**
  * \brief I/O read interface
@@ -108,10 +116,18 @@ int32_t iic_board_read(void *dbc, uint8_t *const buf, const uint16_t length)
     pkg.data = buf;
     
     result = i2c_master_read_packet_wait(&ihc->module, &pkg);
-    if (result == STATUS_OK)
+    switch (result) {
+    case STATUS_OK:
         return ERR_NONE;
-    else if (result == STATUS_ERR_BAD_ADDRESS)
+    case STATUS_ERR_BAD_ADDRESS:
         return ERR_BAD_ADDRESS;
-    
-    return ERR_ABORTED;
+    case STATUS_BUSY:
+    case STATUS_ERR_DENIED:
+    case STATUS_ERR_PACKET_COLLISION:
+    case STATUS_ERR_TIMEOUT:
+    default:
+        return ERR_IO;
+    }
+
+    return ERR_FAILURE;
 }
