@@ -17,7 +17,7 @@
 
 static int32_t enpack_d21_response(response_data_t *resp, uint8_t rdata0, uint8_t rdata1, const uint8_t *data, uint32_t count);
 static void enpackk_d21_response_directly(response_data_t *resp);
-static void *get_d21_response_cache(response_data_t *resp, uint16_t *sz);
+static uint16_t get_d21_response_cache(response_data_t *resp, void **out_ptr);
 
 static int32_t get_bridge_io(void *host, uint8_t cmd, uint8_t bcmd, const uint8_t *data, uint32_t count)
 {
@@ -59,7 +59,7 @@ static int32_t send_bridge_data_bulk(void *host, uint8_t cmd, uint8_t bcmd, cons
     read_size = data[0] | (data[1] << 8);   // The D21 bridge protocol has some issue to support size large than 255, resp len may be truncated
     //data[2~4]: reserved
     addr = data[5] | (data[6] << 8);
-    rcache = get_d21_response_cache(resp, &size);
+    size = get_d21_response_cache(resp, (void **)&rcache);
     read_size_max = intf->cb_trans_size(intf->dbc, size - 5);
     if (read_size > read_size_max)
         lenr = read_size_max;    //count may max than buffer size
@@ -242,13 +242,12 @@ static void enpackk_d21_response_directly(response_data_t *resp)
     resp->dirty = true;
 }
 
-static void *get_d21_response_cache(response_data_t *resp, uint16_t *sz)
+static uint16_t get_d21_response_cache(response_data_t *resp, void **out_ptr)
 {
-    if (sz) {
-        *sz = sizeof(resp->rcache.data);
-    }
+    if (out_ptr)
+        *out_ptr = resp->rcache.data;
 
-    return resp->rcache.data;
+    return min(sizeof(resp->rcache.data), D21_MAX_TRANSFER_SIZE_ONCE);
 }
 
 int32_t d21_parse_command(void *host, const uint8_t *data, uint32_t count)

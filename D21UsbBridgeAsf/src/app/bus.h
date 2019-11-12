@@ -38,8 +38,6 @@ typedef uint8_t (*func_bus_ping_t)(void *dbc, uint8_t addr);
 typedef void (*func_bus_set_address_t)(void *dbc, uint8_t addr);
 typedef uint16_t (*funct_bus_trans_size)(void *dbc, uint16_t size);
 
-#define MAX_TRANSFER_SIZE_ONE_TIME  255
-
 typedef struct bus_interface {
     int type;
     func_bus_init_t cb_init;

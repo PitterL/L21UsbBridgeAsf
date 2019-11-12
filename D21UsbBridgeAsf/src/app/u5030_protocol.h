@@ -51,6 +51,8 @@ Response ID Data 1 Data 2 Data 3 ... Data 63
 #    define CONF_USB_COMPOSITE_HID_GENERIC_INTIN_MAXPKSZ        UDI_HID_GENERIC_EP_SIZE
 #endif
 
+#define MAX_TRANSFER_SIZE_ONCE  CONF_USB_COMPOSITE_HID_GENERIC_INTIN_MAXPKSZ
+
 /*******************************
     Configuration Parameters
 ********************************/

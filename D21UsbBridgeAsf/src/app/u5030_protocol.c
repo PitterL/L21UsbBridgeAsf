@@ -18,7 +18,7 @@
 
 static int32_t enpack_response(response_data_t *resp, uint8_t rdata0, const uint8_t *data, uint32_t count);
 static void enpack_response_directly(response_data_t *resp);
-static void *get_response_cache(response_data_t *resp, uint16_t *sz);
+static uint16_t get_response_cache(response_data_t *resp, void **out_ptr);
 
 static int32_t set_bridge_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
 {
@@ -208,7 +208,7 @@ int32_t u5030_i2c_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *d
             return ret;
     }
 
-    rcache = get_response_cache(resp, &size);
+    size = get_response_cache(resp, (void **)&rcache);
     read_size_max = intf->cb_trans_size(intf->dbc, size - 2);   // bytes[0:1] is response
     if (lenr > read_size_max)
         lenr = read_size_max;    //count may max than buffer size
@@ -279,7 +279,7 @@ int32_t u5030_spi_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *d
             return ret;
     }
 
-    rcache = get_response_cache(resp, &size);
+    size = get_response_cache(resp, (void **)&rcache);
     read_size_max = intf->cb_trans_size(intf->dbc, size - 2);   // bytes[0:1] is response
     if (lenr > read_size_max)
         lenr = read_size_max;    //count may max than buffer size
@@ -363,7 +363,6 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
     uint8_t pin;
     uint8_t ddr;
     uint8_t value;
-    uint8_t mask = 0;
     uint8_t status;
     bool level;
     uint8_t rdata[5];
@@ -372,30 +371,25 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
         return ERR_INVALID_DATA;
 
     ddr = data[0];
-    value = data[1];
-    //User extension
-    if (count >= 3)
-        mask = data[2];
-
     status = 0;
-    for (uint8_t i = 0; i < ARRAY_SIZE(pin_list); i++) {
-        if (TEST_BIT(mask, i))
-            continue;
+    value = data[1];
 
+    for (uint8_t i = 0; i < ARRAY_SIZE(pin_list); i++) {
         port_get_config_defaults(&config);
         pin = pin_list[i];
             
         if (TEST_BIT(ddr, i)) {
             config.direction = PORT_PIN_DIR_OUTPUT;
             port_pin_set_output_level(pin, !!TEST_BIT(value, i));
-            port_pin_set_config(pin, &config);
-            level = port_pin_get_output_level(pin);
         }else {
-            config.direction = PORT_PIN_DIR_INPUT;
-            config.input_pull = TEST_BIT(value, i) ? PORT_PIN_PULL_UP : PORT_PIN_PULL_NONE;
-            port_pin_set_config(pin, &config);
-            level = port_pin_get_input_level(pin);
+            if (config.direction != PORT_PIN_DIR_INPUT) {
+                config.direction = PORT_PIN_DIR_INPUT;
+                config.input_pull = TEST_BIT(value, i) ? PORT_PIN_PULL_UP : PORT_PIN_PULL_NONE;
+            }
         }
+
+        port_pin_set_config(pin, &config);
+        level = port_pin_get_input_level(pin);
         
         if (level)
             status |= (1 << i);
@@ -404,7 +398,6 @@ static int32_t set_bridge_gpios(void *host, uint8_t cmd, const uint8_t *data, ui
     rdata[0] = ddr;
     rdata[1] = status;
     rdata[2] = value;
-    rdata[3] = mask;
 
     return enpack_response(resp, cmd, rdata, sizeof(rdata));
 }
@@ -627,13 +620,12 @@ static void enpack_response_directly(response_data_t *resp)
     resp->dirty = true;
 }
 
-static void *get_response_cache(response_data_t *resp, uint16_t *sz)
+static uint16_t get_response_cache(response_data_t *resp, void **out_ptr)
 {
-    if (sz) {
-        *sz = sizeof(resp->rcache.data);
-    }
+    if (out_ptr)
+        *out_ptr = resp->rcache.data;
 
-    return resp->rcache.data;
+    return min(sizeof(resp->rcache.data), MAX_TRANSFER_SIZE_ONCE);
 }
 
 int32_t u5030_parse_command(void *host, const uint8_t *data, uint32_t count)
