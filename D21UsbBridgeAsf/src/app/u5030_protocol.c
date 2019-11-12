@@ -188,7 +188,7 @@ int32_t u5030_i2c_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *d
     uint16_t size, lenw, lenr, read_size_max, len_rsp = 0;
     uint8_t cmd_rsp;
     int32_t ret;
-    int32_t i, retry = scfg->base.data2.bits.iic_retry ? 3 : 0;
+    int32_t retry = scfg->base.data2.bits.iic_retry ? 3 : 0;
 
     if (!intf || !intf->cb_xfer)
         return ERR_NOT_READY;
@@ -213,7 +213,7 @@ int32_t u5030_i2c_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *d
     if (lenr > read_size_max)
         lenr = read_size_max;    //count may max than buffer size
 
-    for ( i = 0; i <= retry; i++ ) {
+    do {
         ret = intf->cb_xfer(intf->dbc, data + 2, lenw, rcache + 2, lenr, &len_rsp, &cmd_rsp);
         if (ret == ERR_NONE) {
             if (cmd == CMD_AUTO_REPEAT_RESP) {
@@ -227,7 +227,7 @@ int32_t u5030_i2c_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *d
             enpack_response_directly(resp); //above direct write response cache
             break;
         }
-    }
+    } while(--retry);
 
     return ret;
 }
@@ -251,7 +251,7 @@ int32_t u5030_spi_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *d
     uint8_t cmd_rsp;
     const SPI_HEADER_PACKET_T *phead;
     int32_t ret;
-    int32_t i, retry = 0;
+    int32_t retry = 0;
 
     if (!intf || !intf->cb_xfer)
         return ERR_NOT_READY;
@@ -283,7 +283,7 @@ int32_t u5030_spi_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *d
     read_size_max = intf->cb_trans_size(intf->dbc, size - 2);   // bytes[0:1] is response
     if (lenr > read_size_max)
         lenr = read_size_max;    //count may max than buffer size
-    for ( i = 0; i <= retry; i++ ) {
+    do {
         ret = intf->cb_xfer(intf->dbc, data + 2, lenw, rcache + 2, lenr, &len_rsp, &cmd_rsp);
         if (ret == ERR_NONE) {
             if (cmd == CMD_AUTO_REPEAT_RESP) {
@@ -297,7 +297,7 @@ int32_t u5030_spi_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *d
             enpack_response_directly(resp); //above direct write response cache
             break;
         }
-    }
+    } while (--retry);
 
     return ret;
 }

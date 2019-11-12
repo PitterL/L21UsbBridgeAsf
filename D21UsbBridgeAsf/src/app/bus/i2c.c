@@ -70,7 +70,7 @@ int32_t iic_bus_xfer_data(void *dbc, const uint8_t *wdata, uint16_t wlen, uint8_
 
         //TBD: here need a retry delay
 
-    }while(ret != ERR_NONE && retry-- > 0);
+    } while (retry-- > 0);
 
     if (readlen)
         *readlen = len_rsp;

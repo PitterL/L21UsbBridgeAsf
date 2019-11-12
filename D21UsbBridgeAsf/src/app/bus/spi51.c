@@ -23,7 +23,7 @@ int32_t spi51_bus_write(void *dbc, uint16_t addr, const uint8_t *const buf, cons
     int16_t i;
     uint16_t size;
     uint8_t crc;
-    int32_t result;
+    int32_t result = ERR_INVALID_ARG;
     int32_t retry = 1;
 
     SPI_DATA_PACKET_T packet;
@@ -82,7 +82,7 @@ int32_t spi51_bus_read(void *dbc, uint16_t addr, uint8_t *const buf, const uint1
     int16_t i;
     uint16_t size;
     uint8_t crc;
-    int32_t result;
+    int32_t result = ERR_INVALID_ARG;
     int32_t retry = 0;
 
     SPI_DATA_PACKET_T packet;
@@ -190,9 +190,12 @@ int32_t spi51_bus_xfer_data(void *dbc, const uint8_t *wdata, uint16_t wlen, uint
             }
         }
 
+        if (ret == ERR_NONE)
+            break;
+
         //TBD: here need a retry delay
 
-    } while(ret != ERR_NONE && retry-- > 0);
+    } while (retry-- > 0);
 
     if (readlen)
         *readlen = len_rsp;
