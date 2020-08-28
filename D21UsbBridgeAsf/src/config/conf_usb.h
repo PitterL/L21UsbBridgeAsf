@@ -62,9 +62,9 @@
 #define  USB_DEVICE_MANUFACTURE_STRING_ID	  1
 #define  USB_DEVICE_MANUFACTURE_NAME      "ATMEL"
 #define  USB_DEVICE_PRODUCT_STRING_ID        2
-#define  USB_DEVICE_PRODUCT_NAME          "" //"HID Mouse, keyboard, CDC and MSC"
+#define  USB_DEVICE_PRODUCT_NAME          "QRG-I/F" //"Used for non-composite product"
 #define  USB_DEVICE_SERIAL_STRING_ID		  3          
-#define  USB_DEVICE_SERIAL_NAME           "2018-07-13" // Disk SN for MSC
+#define  USB_DEVICE_SERIAL_NAME           "2020-08-28" // Disk SN for MSC
 #define  USB_CONFIG_STR_DESC_STRING_ID		  4          
 #define  USB_CONFIG_STR_DESC_NAME		  ""
 
@@ -110,7 +110,7 @@
 #define  USB_DEVICE_EP_CTRL_SIZE       64
 
 //! Two interfaces for this device (CDC + MSC + HID mouse + HID keyboard)
-#define  USB_DEVICE_NB_INTERFACE       USB_COMPOSITE_DEVICE_INTERFACE_NUM //6
+#define  USB_DEVICE_NB_INTERFACE       USB_COMPOSITE_DEVICE_INTERFACE_NUM
 
 //! 7 endpoints used by HID mouse, HID keyboard, CDC and MSC interfaces
 //! but an IN and OUT endpoints can be defined with the same number on XMEGA, thus 5
@@ -136,19 +136,138 @@
 
 //@}
 
-
 /**
  * USB Interface Configuration
  * @{
  */
-#define  USB_COMPOSITE_DEVICE_INTERFACE_START 0
 
-/* List all support device */
+#define  USB_COMPOSITE_DEVICE_INTERFACE_START 0
+#define  USB_COMPOSITE_DEVICE_INTERFACE_NUM USB_COMPOSITE_DEVICE_MSC_IFACE_NUM_END
+
+/* List all support device 
+	 Note: if change the interface order,need modify the udi_apis[] array order in 'udi_composite_desc.c'
+*/
+
+#define USB_COMPOSITE_DEVICE_HID_GENERIC_EN
+//#define USB_COMPOSITE_DEVICE_HID_MOUSE
+//#define USB_COMPOSITE_DEVICE_HID_KBD
 #define USB_COMPOSITE_DEVICE_UDI_CDC_EN
 //#define USB_COMPOSITE_DEVICE_MSC_EN
-#define USB_COMPOSITE_DEVICE_HID_MOUSE
-//#define USB_COMPOSITE_DEVICE_HID_KBD
-#define USB_COMPOSITE_DEVICE_HID_GENERIC_EN
+
+/**
+ * Configuration of HID GENERIC interface
+ * @{
+ */
+#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
+//! Interface callback definition
+#define  UDI_HID_GENERIC_ENABLE_EXT()        main_generic_enable()
+#define  UDI_HID_GENERIC_DISABLE_EXT()       main_generic_disable()
+#define  UDI_HID_GENERIC_REPORT_OUT(ptr)     main_generic_reportout(ptr)
+#define  UDI_HID_GENERIC_SET_FEATURE(report) main_hid_set_feature(report)
+#define  UDI_HID_GENERIC_SOF() 				 main_generic_sof()
+
+//! Sizes of I/O reports
+#define  UDI_HID_REPORT_IN_SIZE             64
+#define  UDI_HID_REPORT_OUT_SIZE            64
+#define  UDI_HID_REPORT_FEATURE_SIZE        3
+
+//! Sizes of I/O endpoints
+#define  UDI_HID_GENERIC_EP_SIZE            64
+
+//@}
+
+/**
+ * USB HID u5030 low level configuration
+ * In standalone these configurations are defined by the HID u5030 module.
+ * For composite device, these configuration must be defined here
+ * @{
+ */
+//! Endpoint numbers definition
+#define  UDI_HID_GENERIC_EP_IN           (5 | USB_EP_DIR_IN)
+#define  UDI_HID_GENERIC_EP_OUT           (5 | USB_EP_DIR_OUT)
+
+//! Enable id string of interface to add an extra USB string
+#define  UDI_HID_GENERIC_STRING_ID            (USB_CONFIG_STR_DESC_STRING_ID + 1)
+
+//! Interface number
+//Note: For MTA v2.19.xx compatible, use interface number 0 as Bridge HID interface number
+#define  UDI_HID_GENERIC_IFACE_NUMBER          (USB_COMPOSITE_DEVICE_INTERFACE_START + 0)
+#define  USB_COMPOSITE_DEVICE_HID_GENERIC_NUM_END (UDI_HID_GENERIC_IFACE_NUMBER + 1)
+//@}
+#else
+#define  UDI_HID_GENERIC_STRING_ID            (USB_CONFIG_STR_DESC_STRING_ID)
+#define USB_COMPOSITE_DEVICE_HID_GENERIC_NUM_END USB_COMPOSITE_DEVICE_INTERFACE_START
+//@}
+//@}
+#endif //USB_COMPOSITE_DEVICE_HID_GENERIC
+//@}
+
+/**
+ * Configuration of HID Mouse interface
+ * @{
+ */
+#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
+//! Interface callback definition
+#define  UDI_HID_MOUSE_ENABLE_EXT()       main_mouse_enable()
+#define  UDI_HID_MOUSE_DISABLE_EXT()      main_mouse_disable()
+
+/**
+ * USB HID Mouse low level configuration
+ * In standalone these configurations are defined by the HID Mouse module.
+ * For composite device, these configuration must be defined here
+ * @{
+ */
+//! Endpoint numbers definition
+#define  UDI_HID_MOUSE_EP_IN           (3 | USB_EP_DIR_IN)
+
+//! Enable id string of interface to add an extra USB string
+#define  UDI_HID_MOUSE_STRING_ID          (UDI_HID_GENERIC_STRING_ID + 1)
+
+//! Interface number
+#define  UDI_HID_MOUSE_IFACE_NUMBER          (USB_COMPOSITE_DEVICE_HID_GENERIC_NUM_END + 0)
+#define  USB_COMPOSITE_DEVICE_HID_MOUSE_IFACE_NUM_END (UDI_HID_MOUSE_IFACE_NUMBER + 1)
+//@}
+#else
+#define  UDI_HID_MOUSE_STRING_ID          (UDI_HID_GENERIC_STRING_ID)
+#define USB_COMPOSITE_DEVICE_HID_MOUSE_IFACE_NUM_END USB_COMPOSITE_DEVICE_HID_GENERIC_NUM_END
+//@}
+#endif //USB_COMPOSITE_DEVICE_HID_MOUSE
+//@}
+
+/**
+ * Configuration of HID Keyboard interface
+ * @{
+ */
+#ifdef USB_COMPOSITE_DEVICE_HID_KBD
+//! Interface callback definition
+#define  UDI_HID_KBD_ENABLE_EXT()       main_keyboard_enable()
+#define  UDI_HID_KBD_DISABLE_EXT()      main_keyboard_disable()
+#define  UDI_HID_KBD_CHANGE_LED(value)  ui_kbd_led(value)
+
+/**
+ * USB HID Keyboard low level configuration
+ * In standalone these configurations are defined by the HID Keyboard module.
+ * For composite device, these configuration must be defined here
+ * @{
+ */
+//! Endpoint numbers definition
+#define  UDI_HID_KBD_EP_IN           (4 | USB_EP_DIR_IN)
+
+//! Enable id string of interface to add an extra USB string
+#define  UDI_HID_KBD_STRING_ID            (UDI_HID_MOUSE_STRING_ID + 1)
+
+//! Interface number
+#define  UDI_HID_KBD_IFACE_NUMBER          (USB_COMPOSITE_DEVICE_HID_MOUSE_IFACE_NUM_END + 0)
+#define  USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END (UDI_HID_KBD_IFACE_NUMBER + 1)
+//@}
+#else
+#define  UDI_HID_KBD_STRING_ID            (UDI_HID_MOUSE_STRING_ID)
+#define USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END USB_COMPOSITE_DEVICE_HID_MOUSE_IFACE_NUM_END
+//@}
+//@}
+#endif //USB_COMPOSITE_DEVICE_HID_MOUSE
+//@}
+
 
 /**
  * Configuration of CDC interface
@@ -178,9 +297,6 @@
 #define  UDI_CDC_DEFAULT_PARITY           CDC_PAR_EVEN
 #define  UDI_CDC_DEFAULT_DATABITS         8
 
-//! Enable id string of interface to add an extra USB string
-#define  UDI_CDC_IAD_STRING_ID            (USB_CONFIG_STR_DESC_STRING_ID + 1)
-
 /**
  * USB CDC low level configuration
  * In standalone these configurations are defined by the CDC module.
@@ -192,14 +308,17 @@
 #define  UDI_CDC_DATA_EP_IN_0          (6 | USB_EP_DIR_IN)  // TX
 #define  UDI_CDC_DATA_EP_OUT_0         (6 | USB_EP_DIR_OUT) // RX
 
+//! Enable id string of interface to add an extra USB string
+#define  UDI_CDC_IAD_STRING_ID            (UDI_HID_KBD_STRING_ID + 1)
+
 //! Interface numbers
-#define  UDI_CDC_COMM_IFACE_NUMBER_0   (USB_COMPOSITE_DEVICE_INTERFACE_START + 0)
-#define  UDI_CDC_DATA_IFACE_NUMBER_0   (USB_COMPOSITE_DEVICE_INTERFACE_START + 1)
+#define  UDI_CDC_COMM_IFACE_NUMBER_0   (USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END + 0)
+#define  UDI_CDC_DATA_IFACE_NUMBER_0   (USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END + 1)
 #define USB_COMPOSITE_DEVICE_UDI_CDC_IFACE_NUM_END (UDI_CDC_DATA_IFACE_NUMBER_0 + 1)
 //@}
 #else
-#define  UDI_CDC_IAD_STRING_ID            (USB_CONFIG_STR_DESC_STRING_ID)
-#define USB_COMPOSITE_DEVICE_UDI_CDC_IFACE_NUM_END USB_COMPOSITE_DEVICE_INTERFACE_START
+#define  UDI_CDC_IAD_STRING_ID            (UDI_HID_KBD_STRING_ID)
+#define USB_COMPOSITE_DEVICE_UDI_CDC_IFACE_NUM_END USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END
 #endif	//USB_COMPOSITE_DEVICE_UDI_CDC
 //@}
 
@@ -219,9 +338,6 @@
 #define  UDI_MSC_ENABLE_EXT()          main_msc_enable()
 #define  UDI_MSC_DISABLE_EXT()         main_msc_disable()
 
-//! Enable id string of interface to add an extra USB string
-#define  UDI_MSC_STRING_ID                (UDI_CDC_IAD_STRING_ID + 1)
-
 /**
  * USB MSC low level configuration
  * In standalone these configurations are defined by the MSC module.
@@ -232,8 +348,11 @@
 #define  UDI_MSC_EP_IN                 (1 | USB_EP_DIR_IN)
 #define  UDI_MSC_EP_OUT                (1 | USB_EP_DIR_OUT)
 
+//! Enable id string of interface to add an extra USB string
+#define  UDI_MSC_STRING_ID                (UDI_CDC_IAD_STRING_ID + 1)
+
 //! Interface number
-#define  UDI_MSC_IFACE_NUMBER          (USB_COMPOSITE_DEVICE_UDI_CDC_IFACE_NUM_END + 0)//2
+#define  UDI_MSC_IFACE_NUMBER          (USB_COMPOSITE_DEVICE_UDI_CDC_IFACE_NUM_END + 0)
 #define  USB_COMPOSITE_DEVICE_MSC_IFACE_NUM_END (UDI_MSC_IFACE_NUMBER + 1)
 //@}
 #else
@@ -244,126 +363,9 @@
 
 
 /**
- * Configuration of HID Mouse interface
- * @{
- */
-#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
-//! Interface callback definition
-#define  UDI_HID_MOUSE_ENABLE_EXT()       main_mouse_enable()
-#define  UDI_HID_MOUSE_DISABLE_EXT()      main_mouse_disable()
-
-//! Enable id string of interface to add an extra USB string
-#define  UDI_HID_MOUSE_STRING_ID          (UDI_MSC_STRING_ID + 1)
-
-/**
- * USB HID Mouse low level configuration
- * In standalone these configurations are defined by the HID Mouse module.
- * For composite device, these configuration must be defined here
- * @{
- */
-//! Endpoint numbers definition
-#define  UDI_HID_MOUSE_EP_IN           (3 | USB_EP_DIR_IN)
-
-//! Interface number
-#define  UDI_HID_MOUSE_IFACE_NUMBER          (USB_COMPOSITE_DEVICE_UDI_CDC_IFACE_NUM_END + 0)//3
-#define  USB_COMPOSITE_DEVICE_HID_MOUSE_IFACE_NUM_END (UDI_HID_MOUSE_IFACE_NUMBER + 1)
-//@}
-#else
-#define  UDI_HID_MOUSE_STRING_ID          (UDI_MSC_STRING_ID)
-#define USB_COMPOSITE_DEVICE_HID_MOUSE_IFACE_NUM_END USB_COMPOSITE_DEVICE_UDI_CDC_IFACE_NUM_END
-//@}
-#endif //USB_COMPOSITE_DEVICE_HID_MOUSE
-//@}
-
-/**
- * Configuration of HID Keyboard interface
- * @{
- */
-#ifdef USB_COMPOSITE_DEVICE_HID_KBD
-//! Interface callback definition
-#define  UDI_HID_KBD_ENABLE_EXT()       main_keyboard_enable()
-#define  UDI_HID_KBD_DISABLE_EXT()      main_keyboard_disable()
-#define  UDI_HID_KBD_CHANGE_LED(value)  ui_kbd_led(value)
-
-//! Enable id string of interface to add an extra USB string
-#define  UDI_HID_KBD_STRING_ID            (UDI_HID_MOUSE_STRING_ID + 1)
-
-/**
- * USB HID Keyboard low level configuration
- * In standalone these configurations are defined by the HID Keyboard module.
- * For composite device, these configuration must be defined here
- * @{
- */
-//! Endpoint numbers definition
-#define  UDI_HID_KBD_EP_IN           (4 | USB_EP_DIR_IN)
-
-//! Interface number
-#define  UDI_HID_KBD_IFACE_NUMBER          (USB_COMPOSITE_DEVICE_HID_MOUSE_IFACE_NUM_END + 0)//4
-#define  USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END (UDI_HID_KBD_IFACE_NUMBER + 1)
-//@}
-#else
-#define  UDI_HID_KBD_STRING_ID            (UDI_HID_MOUSE_STRING_ID)
-#define USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END USB_COMPOSITE_DEVICE_HID_MOUSE_IFACE_NUM_END
-//@}
-//@}
-#endif //USB_COMPOSITE_DEVICE_HID_MOUSE
-//@}
-
-/**
- * Configuration of HID GENERIC interface
- * @{
- */
-#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
-//! Interface callback definition
-#define  UDI_HID_GENERIC_ENABLE_EXT()        main_generic_enable()
-#define  UDI_HID_GENERIC_DISABLE_EXT()       main_generic_disable()
-#define  UDI_HID_GENERIC_REPORT_OUT(ptr)     main_generic_reportout(ptr)
-#define  UDI_HID_GENERIC_SET_FEATURE(report) main_hid_set_feature(report)
-#define  UDI_HID_GENERIC_SOF() 				 main_generic_sof()
-
-//! Sizes of I/O reports
-#define  UDI_HID_REPORT_IN_SIZE             64
-#define  UDI_HID_REPORT_OUT_SIZE            64
-#define  UDI_HID_REPORT_FEATURE_SIZE        3
-
-//! Sizes of I/O endpoints
-#define  UDI_HID_GENERIC_EP_SIZE            64
-
-//@}
-
-//! Enable id string of interface to add an extra USB string
-#define  UDI_HID_GENERIC_STRING_ID            (UDI_HID_KBD_STRING_ID + 1)
-
-/**
- * USB HID u5030 low level configuration
- * In standalone these configurations are defined by the HID u5030 module.
- * For composite device, these configuration must be defined here
- * @{
- */
-//! Endpoint numbers definition
-#define  UDI_HID_GENERIC_EP_IN           (5 | USB_EP_DIR_IN)
-#define  UDI_HID_GENERIC_EP_OUT           (5 | USB_EP_DIR_OUT)
-
-//! Interface number
-//#define  UDI_HID_GENERIC_IFACE_NUMBER    5
-//Note For MTA compatible, please don't use interface 0 and 2 for Bridge HID
-#define  UDI_HID_GENERIC_IFACE_NUMBER          (USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END + 0) //5
-#define  USB_COMPOSITE_DEVICE_HID_GENERIC_NUM_END (UDI_HID_GENERIC_IFACE_NUMBER + 1)
-//@}
-#else
-#define  UDI_HID_GENERIC_STRING_ID            (UDI_HID_KBD_STRING_ID)
-#define USB_COMPOSITE_DEVICE_HID_GENERIC_NUM_END USB_COMPOSITE_DEVICE_HID_KBD_IFACE_NUM_END
-//@}
-//@}
-#endif //USB_COMPOSITE_DEVICE_HID_GENERIC
-//@}
-
-
-/**
  * Description of Composite Device
  * @{
  */
-#define  USB_COMPOSITE_DEVICE_INTERFACE_NUM USB_COMPOSITE_DEVICE_HID_GENERIC_NUM_END
 
 //! USB Interfaces descriptor structure
 /*
@@ -416,11 +418,8 @@
 //@}
 
 //! The includes of classes and other headers must be done at the end of this file to avoid compile error
-#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
-#include "udi_cdc.h"
-#endif
-#ifdef USB_COMPOSITE_DEVICE_MSC_EN
-#include "udi_msc.h"
+#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
+#include "udi_hid_generic.h"
 #endif
 #ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 #include "udi_hid_mouse.h"
@@ -428,10 +427,14 @@
 #ifdef USB_COMPOSITE_DEVICE_HID_KBD
 #include "udi_hid_kbd.h"
 #endif
-#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
-#include "udi_hid_generic.h"
-#endif
+#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
+#include "udi_cdc.h"
 #include "uart.h"
+#endif
+#ifdef USB_COMPOSITE_DEVICE_MSC_EN
+#include "udi_msc.h"
+#endif
+
 #include "main.h"
 #include "ui.h"
 

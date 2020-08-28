@@ -20,6 +20,18 @@ static int32_t enpack_response(response_data_t *resp, uint8_t rdata0, const uint
 static void enpack_response_directly(response_data_t *resp);
 static uint16_t get_response_cache(response_data_t *resp, void **out_ptr);
 
+static int32_t get_bridge_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
+{
+	controller_t *hc = (controller_t *)host;
+	config_setting_t *scfg = &hc->setting;
+	response_data_t *resp = &hc->response;
+
+	uint32_t cfg_size;
+	cfg_size = Min(sizeof(scfg->base), count);
+
+	return enpack_response(resp, cmd, (void *)&scfg->base, cfg_size);
+}
+
 static int32_t set_bridge_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count)
 {
     controller_t *hc = (controller_t *)host;
@@ -540,10 +552,10 @@ struct cmd_func_map{
 //0x24, 0x25, 0x26, 0x27, 0x34, 0x35, 0x4A, 0x4B, 0x4C, 0x5A, 0x5B, 0x5F
 static struct cmd_func_map u5030_command_func_map_list[] = {
     //Base command
-    {CMD_CONFIG, set_bridge_config},
+    {CMD_GET_CONFIG, get_bridge_config},
+    {CMD_SET_CONFIG, set_bridge_config},
     {CMD_SAVE_CONFIGS_EEPROM, NULL},
     {CMD_RESTORE_DEFAULT_CONFIGS, NULL},
-    {CMD_GET_CONFIG, NULL},
     {CMD_CONFIG_READ_PINS, NULL},
     {CMD_READ_PINS, NULL},
     {CMD_SET_GPIOS, set_bridge_gpios},
@@ -609,10 +621,10 @@ static int32_t enpack_response(response_data_t *resp, uint8_t rdata, const uint8
     return ERR_NONE;
 }
 
-int32_t enpack_response_nak(response_data_t *resp)
+int32_t enpack_response_nak(response_data_t *resp, uint8_t cmd)
 {
-    uint8_t dummy = 0;
-    return enpack_response(resp, CMD_NAK, &dummy, 1);
+    uint8_t dummy = CMD_NAK;
+    return enpack_response(resp, cmd, &dummy, 1);
 }
 
 static void enpack_response_directly(response_data_t *resp)
@@ -653,7 +665,7 @@ int32_t u5030_parse_command(void *host, const uint8_t *data, uint32_t count)
     }
 
     if (result != ERR_NONE && result != ERR_NOT_FOUND)
-        result = enpack_response_nak(resp);
+        result = enpack_response_nak(resp, cmd);
     
     return result;
 }

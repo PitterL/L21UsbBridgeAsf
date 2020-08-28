@@ -35,6 +35,7 @@
  */
 
 #include "conf_usb.h"
+#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
 #include "usb_protocol.h"
 #include "usb_protocol_cdc.h"
 #include "udd.h"
@@ -1137,5 +1138,5 @@ iram_size_t udi_cdc_write_buf(const void* buf, iram_size_t size)
 {
 	return udi_cdc_multi_write_buf(0, buf, size);
 }
-
+#endif
 //@}

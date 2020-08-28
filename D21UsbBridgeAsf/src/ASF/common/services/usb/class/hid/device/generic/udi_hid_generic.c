@@ -35,6 +35,7 @@
  */
 
 #include "conf_usb.h"
+#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
 #include "usb_protocol.h"
 #include "udd.h"
 #include "udc.h"
@@ -341,4 +342,5 @@ void udi_hid_generic_sof_notify(void)
 	UDI_HID_GENERIC_SOF();
 }
 
+#endif
 //@}

@@ -140,7 +140,7 @@ bool main_extra_string(void)
 	static uint8_t udi_hid_kbd_name[] = "HID keyboard interface";
 	#endif
 	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
-	static uint8_t udi_hid_generic_name[] = "QRG-I/F";
+	static uint8_t udi_hid_generic_name[] = USB_DEVICE_PRODUCT_NAME /*"QRG-I/F"*/;
 	#endif
 
 	struct extra_strings_desc_t{
@@ -213,6 +213,7 @@ bool main_extra_string(void)
 	return true;
 }
 
+#ifdef USB_COMPOSITE_DEVICE_MSC_EN
 bool main_msc_enable(void)
 {
 	main_b_msc_enable = true;
@@ -223,7 +224,9 @@ void main_msc_disable(void)
 {
 	main_b_msc_enable = false;
 }
+#endif
 
+#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 bool main_mouse_enable(void)
 {
 	main_b_mouse_enable = true;
@@ -234,7 +237,9 @@ void main_mouse_disable(void)
 {
 	main_b_mouse_enable = false;
 }
+#endif
 
+#ifdef USB_COMPOSITE_DEVICE_HID_KBD
 bool main_keyboard_enable(void)
 {
 	main_b_keyboard_enable = true;
@@ -245,7 +250,9 @@ void main_keyboard_disable(void)
 {
 	main_b_keyboard_enable = false;
 }
+#endif
 
+#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
 bool main_generic_enable(void)
 {
 	main_b_generic_enable = true;
@@ -285,7 +292,9 @@ void main_hid_set_feature(uint8_t* report)
 		ui_powerdown();
 	}
 }
+#endif
 
+#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
 bool main_cdc_enable(uint8_t port)
 {
 	main_b_cdc_enable = true;
@@ -311,6 +320,7 @@ void main_cdc_set_dtr(uint8_t port, bool b_enable)
 		ui_com_close(port);
 	}
 }
+#endif
 
 /**
  * \mainpage ASF USB Composite Device Example HIDs, CDC and MSC

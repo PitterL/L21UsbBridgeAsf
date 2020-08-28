@@ -229,12 +229,12 @@ static int32_t enpack_d21_response(response_data_t *resp, uint8_t rdata0, uint8_
     return ERR_NONE;
 }
 
-static int32_t enpack_d21_response_nak(response_data_t *resp)
+static int32_t enpack_d21_response_nak(response_data_t *resp, uint8_t cmd, uint8_t bcmd)
 {
     uint8_t dummy[8];
     
-    memset(dummy, 0xff, sizeof(dummy));
-    return enpack_d21_response(resp, CMD_NAK, CMD_NAK, dummy, sizeof(dummy));
+    memset(dummy, CMD_NAK, sizeof(dummy));
+    return enpack_d21_response(resp, cmd, bcmd, dummy, sizeof(dummy));
 }
 
 static void enpackk_d21_response_directly(response_data_t *resp)
@@ -280,7 +280,7 @@ int32_t d21_parse_command(void *host, const uint8_t *data, uint32_t count)
     }
 
     if (result != ERR_NONE && result != ERR_NOT_FOUND)
-        result = enpack_d21_response_nak(resp);
+        result = enpack_d21_response_nak(resp, cmd, bcmd);
         
     return result;
 }

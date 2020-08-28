@@ -620,8 +620,9 @@ static bool udc_req_std_dev_get_str_desc(void)
 	default:
 #ifdef UDC_GET_EXTRA_STRING
 		return UDC_GET_EXTRA_STRING();
-#endif
+#else
 		return false;
+#endif
 	}
 
 	str_length = Min(strlen((const char *)str), USB_COMPOSITE_DEVICE_MAX_STRING_SIZE);

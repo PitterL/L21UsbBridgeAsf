@@ -62,7 +62,16 @@ UDC_DESC_STORAGE usb_dev_desc_t udc_device_desc = {
 	.bcdDevice                 = LE16((USB_DEVICE_MAJOR_VERSION << 8)
 		| USB_DEVICE_MINOR_VERSION),
 	.iManufacturer             = USB_DEVICE_MANUFACTURE_STRING_ID,
-	.iProduct                  = 0 /*USB_DEVICE_PRODUCT_STRING_ID*/,
+	/*
+		see the WDK of HidD_GetProductString() function,
+		for non-composite device, the iProduct is used, for composite device, the iInterface is used */
+	.iProduct                  = 
+		#if (USB_COMPOSITE_DEVICE_INTERFACE_NUM == 1)
+			USB_DEVICE_PRODUCT_STRING_ID
+		#else
+			0
+		#endif
+		,
 	.iSerialNumber             = USB_DEVICE_SERIAL_STRING_ID,
 	.bNumConfigurations        = 1
 };
@@ -88,13 +97,8 @@ COMPILER_PACK_SET(1)
 typedef struct {
 	usb_conf_desc_t conf;
 	//UDI_COMPOSITE_DESC_T;
-	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
-	usb_iad_desc_t       udi_cdc_iad;
-	udi_cdc_comm_desc_t  udi_cdc_comm;
-	udi_cdc_data_desc_t  udi_cdc_data;
-	#endif
-	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
-	udi_msc_desc_t       udi_msc;
+	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
+	udi_hid_generic_desc_t   udi_hid_generic;
 	#endif
 	#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 	udi_hid_mouse_desc_t udi_hid_mouse;
@@ -102,8 +106,13 @@ typedef struct {
 	#ifdef USB_COMPOSITE_DEVICE_HID_KBD
 	udi_hid_kbd_desc_t   udi_hid_kbd;
 	#endif
-	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
-	udi_hid_generic_desc_t   udi_hid_generic;
+	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
+	usb_iad_desc_t       udi_cdc_iad;
+	udi_cdc_comm_desc_t  udi_cdc_comm;
+	udi_cdc_data_desc_t  udi_cdc_data;
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
+	udi_msc_desc_t       udi_msc;
 	#endif
 } udc_desc_t;
 COMPILER_PACK_RESET()
@@ -120,13 +129,8 @@ UDC_DESC_STORAGE udc_desc_t udc_desc_fs = {
 	.conf.bmAttributes         = USB_CONFIG_ATTR_MUST_SET | USB_DEVICE_ATTR,
 	.conf.bMaxPower            = USB_CONFIG_MAX_POWER(USB_DEVICE_POWER),
 	//UDI_COMPOSITE_DESC_FS
-	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
-	.udi_cdc_iad   = UDI_CDC_IAD_DESC_0,
-	.udi_cdc_comm  = UDI_CDC_COMM_DESC_0,
-	.udi_cdc_data  = UDI_CDC_DATA_DESC_0_FS,
-	#endif
-	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
-	.udi_msc       = UDI_MSC_DESC_FS,
+	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
+	.udi_hid_generic = UDI_HID_GENERIC_DESC,
 	#endif
 	#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 	.udi_hid_mouse = UDI_HID_MOUSE_DESC,
@@ -134,8 +138,13 @@ UDC_DESC_STORAGE udc_desc_t udc_desc_fs = {
 	#ifdef USB_COMPOSITE_DEVICE_HID_KBD
 	.udi_hid_kbd   = UDI_HID_KBD_DESC,
 	#endif
-	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
-	.udi_hid_generic = UDI_HID_GENERIC_DESC,
+	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
+	.udi_cdc_iad   = UDI_CDC_IAD_DESC_0,
+	.udi_cdc_comm  = UDI_CDC_COMM_DESC_0,
+	.udi_cdc_data  = UDI_CDC_DATA_DESC_0_FS,
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
+	.udi_msc       = UDI_MSC_DESC_FS,
 	#endif
 };
 
@@ -152,13 +161,8 @@ UDC_DESC_STORAGE udc_desc_t udc_desc_hs = {
 	.conf.bmAttributes         = USB_CONFIG_ATTR_MUST_SET | USB_DEVICE_ATTR,
 	.conf.bMaxPower            = USB_CONFIG_MAX_POWER(USB_DEVICE_POWER),
 	//UDI_COMPOSITE_DESC_HS
-	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
-	.udi_cdc_iad   = UDI_CDC_IAD_DESC_0,
-	.udi_cdc_comm  = UDI_CDC_COMM_DESC_0,
-	.udi_cdc_data  = UDI_CDC_DATA_DESC_0_HS,
-	#endif
-	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
-	.udi_msc       = UDI_MSC_DESC_HS,
+	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
+	.udi_hid_generic = UDI_HID_GENERIC_DESC,
 	#endif
 	#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 	.udi_hid_mouse = UDI_HID_MOUSE_DESC,
@@ -166,8 +170,13 @@ UDC_DESC_STORAGE udc_desc_t udc_desc_hs = {
 	#ifdef USB_COMPOSITE_DEVICE_HID_KBD
 	.udi_hid_kbd   = UDI_HID_KBD_DESC,
 	#endif
-	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
-	.udi_hid_generic = UDI_HID_GENERIC_DESC,
+	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
+	.udi_cdc_iad   = UDI_CDC_IAD_DESC_0,
+	.udi_cdc_comm  = UDI_CDC_COMM_DESC_0,
+	.udi_cdc_data  = UDI_CDC_DATA_DESC_0_HS,
+	#endif
+	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
+	.udi_msc       = UDI_MSC_DESC_HS,
 	#endif
 };
 #endif
@@ -181,21 +190,21 @@ UDC_DESC_STORAGE udc_desc_t udc_desc_hs = {
 //! Associate an UDI for each USB interface
 UDC_DESC_STORAGE udi_api_t *udi_apis[USB_DEVICE_NB_INTERFACE] = {
 	//UDI_COMPOSITE_API
-	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
-	&udi_api_cdc_comm,
-	&udi_api_cdc_data,
-	#endif
-	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
-	&udi_api_msc,
+	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
+	&udi_api_hid_generic,
 	#endif
 	#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 	&udi_api_hid_mouse,
 	#endif
 	#ifdef USB_COMPOSITE_DEVICE_HID_KBD
 	&udi_api_hid_kbd,
+	#endif	
+	#ifdef USB_COMPOSITE_DEVICE_UDI_CDC_EN
+	&udi_api_cdc_comm,
+	&udi_api_cdc_data,
 	#endif
-	#ifdef USB_COMPOSITE_DEVICE_HID_GENERIC_EN
-	&udi_api_hid_generic,
+	#ifdef USB_COMPOSITE_DEVICE_MSC_EN
+	&udi_api_msc,
 	#endif
 };
 

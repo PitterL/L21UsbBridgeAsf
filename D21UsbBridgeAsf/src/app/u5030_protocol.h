@@ -48,7 +48,11 @@ Response ID Data 1 Data 2 Data 3 ... Data 63
 */
 #include "conf_usb.h"
 #ifndef CONF_USB_COMPOSITE_HID_GENERIC_INTIN_MAXPKSZ
+#ifdef UDI_HID_GENERIC_EP_SIZE
 #    define CONF_USB_COMPOSITE_HID_GENERIC_INTIN_MAXPKSZ        UDI_HID_GENERIC_EP_SIZE
+#else
+#    define CONF_USB_COMPOSITE_HID_GENERIC_INTIN_MAXPKSZ        64
+#endif
 #endif
 
 #define MAX_TRANSFER_SIZE_ONCE  CONF_USB_COMPOSITE_HID_GENERIC_INTIN_MAXPKSZ
@@ -56,7 +60,7 @@ Response ID Data 1 Data 2 Data 3 ... Data 63
 /*******************************
     Configuration Parameters
 ********************************/
-#define CMD_CONFIG 0x80
+#define CMD_SET_CONFIG 0x80
 /*    
     <CMD_CONFIG>
         Sets the parameters for the communication modes supported by the USB5030.

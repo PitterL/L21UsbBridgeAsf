@@ -18,7 +18,7 @@
 
 static controller_t g_host_controller;
 
-extern int32_t enpack_response_nak(response_data_t *resp);
+extern int32_t enpack_response_nak(response_data_t *resp, uint8_t cmd);
 
 /*
     HID host send data through OUT token, bridge will execute the command. If there is repeat command, call check function at SOF
@@ -49,7 +49,7 @@ void hiddf_intf_receive(const uint8_t *data, uint32_t size)
     }
 
     if (result != ERR_NONE) {
-        enpack_response_nak(resp);
+        enpack_response_nak(resp, data[0]);
     }
 }
 
