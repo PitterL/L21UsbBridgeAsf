@@ -10,7 +10,7 @@
 #include "board.h"
 #include "external/err_codes.h"
 
-int32_t i2c_master_get_default_pads(void *hw, struct i2c_master_config *const cfg)
+int32_t iic_set_config(void *hw, struct i2c_master_config *const cfg, uint32_t baudrate)
 {
     uint32_t pad0, pad1;
 
@@ -37,39 +37,45 @@ int32_t i2c_master_get_default_pads(void *hw, struct i2c_master_config *const cf
 
     cfg->pinmux_pad0 = pad0;
     cfg->pinmux_pad1 = pad1;
+    cfg->baud_rate = baudrate;
 
     return ERR_NONE;
 }
 
-void iic_set_address(iic_controller_t *ihc, uint8_t addr)
+void iic_board_set_address(void *dbc, uint8_t addr)
 {
+    iic_controller_t *ihc = (iic_controller_t *)dbc;
+
     ihc->addr = addr;
 }
 
-int32_t iic_bus_init(iic_controller_t *ihc, void *hw, uint8_t baudrate, uint8_t addr)
+int32_t iic_board_init(void *dbc, void *hw, uint32_t baudrate, uint8_t addr)
 {
+    iic_controller_t *ihc = (iic_controller_t *)dbc;
+
     i2c_master_get_config_defaults(&ihc->config);
-    i2c_master_get_default_pads(hw, &ihc->config);
+    iic_set_config(hw, &ihc->config, baudrate);
     i2c_master_init(&ihc->module, hw, &ihc->config);
     i2c_master_enable(&ihc->module);
-    iic_set_address(ihc, addr);
+    iic_board_set_address(ihc, addr);
 
     return ERR_NONE;
 }
 
-int32_t iic_bus_deinit(iic_controller_t *ihc)
+int32_t iic_board_deinit(void *dbc)
 {
-	  i2c_master_disable(&ihc->module);
+    iic_controller_t *ihc = (iic_controller_t *)dbc;
+	i2c_master_disable(&ihc->module);
 	
     return ERR_NONE;
 }
 
-
 /**
  * \brief I/O write interface
  */
-int32_t iic_write(iic_controller_t *ihc, const uint8_t *const buf, const uint16_t length)
+int32_t iic_board_write(void *dbc, const uint8_t *const buf, const uint16_t length)
 {
+    iic_controller_t *ihc = (iic_controller_t *)dbc;
     struct i2c_master_packet_w pkg;
     enum status_code result;
     
@@ -77,21 +83,30 @@ int32_t iic_write(iic_controller_t *ihc, const uint8_t *const buf, const uint16_
     pkg.address = ihc->addr;
     pkg.data_length = length;
     pkg.data = buf;
-    
-    result = i2c_master_write_packet_wait(&ihc->module, (struct i2c_master_packet *)&pkg);
-    if (result == STATUS_OK)
-        return ERR_NONE;
-    else if (result == STATUS_ERR_BAD_ADDRESS)
-        return ERR_BAD_ADDRESS;
 
-    return ERR_ABORTED;
-}
+    result = i2c_master_write_packet_wait(&ihc->module, (struct i2c_master_packet *)&pkg);
+    switch (result) {
+        case STATUS_OK:
+            return ERR_NONE;
+        case STATUS_ERR_BAD_ADDRESS:
+            return ERR_BAD_ADDRESS;
+        case STATUS_ERR_OVERFLOW:
+            return ERR_FAILURE;
+        case STATUS_BUSY:
+        case STATUS_ERR_DENIED:
+        case STATUS_ERR_PACKET_COLLISION:
+        case STATUS_ERR_TIMEOUT:
+        default:
+            return ERR_IO;
+    }   
+ }
 
 /**
  * \brief I/O read interface
  */
-int32_t iic_read(iic_controller_t *ihc, uint8_t *const buf, const uint16_t length)
+int32_t iic_board_read(void *dbc, uint8_t *const buf, const uint16_t length)
 {
+    iic_controller_t *ihc = (iic_controller_t *)dbc;
     struct i2c_master_packet pkg;
     enum status_code result;
     
@@ -101,10 +116,18 @@ int32_t iic_read(iic_controller_t *ihc, uint8_t *const buf, const uint16_t lengt
     pkg.data = buf;
     
     result = i2c_master_read_packet_wait(&ihc->module, &pkg);
-    if (result == STATUS_OK)
+    switch (result) {
+    case STATUS_OK:
         return ERR_NONE;
-    else if (result == STATUS_ERR_BAD_ADDRESS)
+    case STATUS_ERR_BAD_ADDRESS:
         return ERR_BAD_ADDRESS;
-    
-    return ERR_ABORTED;
+    case STATUS_BUSY:
+    case STATUS_ERR_DENIED:
+    case STATUS_ERR_PACKET_COLLISION:
+    case STATUS_ERR_TIMEOUT:
+    default:
+        return ERR_IO;
+    }
+
+    return ERR_FAILURE;
 }

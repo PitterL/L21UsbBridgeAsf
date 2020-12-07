@@ -48,13 +48,19 @@ Response ID Data 1 Data 2 Data 3 ... Data 63
 */
 #include "conf_usb.h"
 #ifndef CONF_USB_COMPOSITE_HID_GENERIC_INTIN_MAXPKSZ
+#ifdef UDI_HID_GENERIC_EP_SIZE
 #    define CONF_USB_COMPOSITE_HID_GENERIC_INTIN_MAXPKSZ        UDI_HID_GENERIC_EP_SIZE
+#else
+#    define CONF_USB_COMPOSITE_HID_GENERIC_INTIN_MAXPKSZ        64
 #endif
+#endif
+
+#define MAX_TRANSFER_SIZE_ONCE  CONF_USB_COMPOSITE_HID_GENERIC_INTIN_MAXPKSZ
 
 /*******************************
     Configuration Parameters
 ********************************/
-#define CMD_CONFIG 0x80
+#define CMD_SET_CONFIG 0x80
 /*    
     <CMD_CONFIG>
         Sets the parameters for the communication modes supported by the USB5030.
@@ -71,21 +77,21 @@ Response ID Data 1 Data 2 Data 3 ... Data 63
             1 = on (half duplex)
             0 = off (full duplex)
         use_drdy: Bit 6
-        Use DRDY pin for SPI / UART Comms
+        Use DRDY pin for SPI / UART Comm
             0 = off Ignore DRDY Pin
             1 = on Wait for DRDY high / 100ms timeout
         iic_clk: Bit5:4
-        Clock rate for IIC Comms
+        Clock rate for IIC Comm
             00 = 50kHz
             01 = 100kHz
             10 = 200kHz
             11 = 400kHz
         ss_pulse: Bit 3
-        Pulse SS pin before SPI / UART Comms
+        Pulse SS pin before SPI / UART Comm
             0 = off
             1 = on
         Generates a 20us low pulse on SS, then delays for 1ms
-        before starting comms
+        before starting Comm
         spi_clk: Bits2:0
             0 = 25kHz
             1 = 50kHz
@@ -99,7 +105,7 @@ Response ID Data 1 Data 2 Data 3 ... Data 63
 */
 union config_data1{
     struct {
-        uint8_t spi_clk: 2;
+        uint8_t spi_clk: 3;
         uint8_t ss_pulse: 1;
         uint8_t iic_clk: 2;
         uint8_t use_drdy: 1;
@@ -230,10 +236,19 @@ union config_data4{
 
 #define CONFIG_DATA4_SPI_MODE_SHIFT 4
 #define CONFIG_DATA4_SPI_MODE_MASK 0x3
-#define SPI_MODE_0 0
+/*
+Mode 0 CPOL=0, CPHA=0
+Mode 1 CPOL=0, CPHA=1
+Mode 2 CPOL=1, CPHA=0
+Mode 3 CPOL=1, CPHA=1
+
+    时钟极性CPOL: 即SPI空闲时，时钟信号SCLK的电平（1:空闲时高电平; 0:空闲时低电平）
+    时钟相位CPHA: 即SPI在SCLK第几个边沿开始采样（0:第一个边沿开始; 1:第二个边沿开始）
+*/
+#define SPI_MODE_3 0
 #define SPI_MODE_1 1
 #define SPI_MODE_2 2
-#define SPI_MODE_3 3
+#define SPI_MODE_0 3
 
 #define CONFIG_DATA4_UART_BAUDRATE_SHIFT 0
 #define CONFIG_DATA4_UART_BAUDRATE_MASK 0xf
@@ -1014,11 +1029,12 @@ union config_edat1{
 #define EXT_CONFIG_COMMUNICATION_MODE_SHIFT 0
 #define EXT_CONFIG_COMMUNICATION_MODE_MASK 0xf
 #define COM_MODE_IIC_ONLY 0
-#define COM_MODE_SPI_ONLY 1
+#define COM_MODE_SPI50 1
 #define COM_MODE_UART_ONLY 2
 #define COM_MODE_DUAL_IIC 3
 #define COM_MODE_IIC_UART 4
 #define COM_MODE_DUAL_UART 5
+#define COM_MODE_SPI51 6
 #define COM_MODE_IIC_UART_SPI_FULL 7
 
 #define CMD_SET_GPIO_EXT 0x73
@@ -1130,12 +1146,12 @@ typedef struct {
 #define GPIO_P_LED2 GP_IO_LED2_EN
 #endif
 
-
 int32_t u5030_parse_command(void *host, const uint8_t *data, uint32_t count);
 int32_t u5030_check_auto_repeat_avaliable(void *host, const uint8_t *data, uint32_t count);
 bool u5030_chg_line_active(void *host);
 int32_t u5030_set_bridge_ext_config(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
-int32_t u5030_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
+int32_t u5030_i2c_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
+int32_t u5030_spi_transfer_bridge_data(void *host, uint8_t cmd, const uint8_t *data, uint32_t count);
 int32_t u5030_init(void);
 void u5030_deinit(void);
 

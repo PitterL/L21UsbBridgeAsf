@@ -35,6 +35,7 @@
  */
 
 #include "conf_usb.h"
+#ifdef USB_COMPOSITE_DEVICE_HID_MOUSE
 #include "usb_protocol.h"
 #include "udd.h"
 #include "udc.h"
@@ -339,5 +340,5 @@ static void udi_hid_mouse_report_sent(udd_ep_status_t status,
 		udi_hid_mouse_send_report();
 	}
 }
-
+#endif
 //@}

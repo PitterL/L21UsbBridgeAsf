@@ -8,6 +8,8 @@
 #ifndef PROTOCOL_D21_H_
 #define PROTOCOL_D21_H_
 
+#define D21_MAX_TRANSFER_SIZE_ONCE  63 //Note, for HID transfer, max data loading is 64, but MTA has bugs to get max loading
+
 /*******************************
     D21 extension 
 *******************************/
